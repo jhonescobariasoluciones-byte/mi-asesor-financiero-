@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnóstico de Finanzas Personales</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://css.gg/css?=|trash" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Estilo personalizado para usar la fuente Inter */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Estilo para los placeholders de los inputs */
+        ::placeholder {
+            color: #9ca3af;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+        
+        <!-- Encabezado -->
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-slate-900">Panel de Salud Financiera</h1>
+            <p class="text-slate-600 mt-2">Analiza tus finanzas, entiende tus gastos y toma el control de tu dinero.</p>
+        </header>
+
+        <!-- Selector de Moneda -->
+        <div class="max-w-md mx-auto mb-8 bg-white p-4 rounded-lg shadow-md">
+            <label for="currency" class="block text-sm font-medium text-slate-700 text-center">Selecciona tu moneda principal</label>
+            <select id="currency" class="mt-2 block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                <option value="COP">Pesos Colombianos (COP)</option>
+                <option value="USD">Dólares Americanos (USD)</option>
+            </select>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <!-- Columna de Entrada de Datos -->
+            <div class="space-y-8">
+                
+                <!-- Card de Ingresos -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-4 border-b pb-2">1. Ingresos Mensuales</h2>
+                    <div id="incomes-container" class="space-y-4">
+                        <div>
+                            <label class="text-sm font-medium text-slate-700">Ingreso Principal</label>
+                            <input type="text" inputmode="decimal" placeholder="Ej: 3.000.000" class="mt-1 block w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 data-input">
+                        </div>
+                    </div>
+                    <button id="add-income" class="mt-4 text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition-colors">+ Añadir otro ingreso</button>
+                </div>
+
+                <!-- Card de Gastos Fijos -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-4 border-b pb-2">2. Gastos Fijos Mensuales</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-sm font-medium text-slate-700">Arriendo / Hipoteca</label>
+                            <input type="text" inputmode="decimal" placeholder="0" class="mt-1 block w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 data-input fixed-expense">
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-slate-700">Servicios (Agua, Luz, Gas)</label>
+                            <input type="text" inputmode="decimal" placeholder="0" class="mt-1 block w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 data-input fixed-expense">
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-slate-700">Internet / Celular</label>
+                            <input type="text" inputmode="decimal" placeholder="0" class="mt-1 block w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 data-input fixed-expense">
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-slate-700">Suscripciones</label>
+                            <input type="text" inputmode="decimal" placeholder="0" class="mt-1 block w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 data-input fixed-expense">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card de Gastos Variables -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-4 border-b pb-2">3. Gastos Variables Mensuales</h2>
+                    <form id="variable-expense-form" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
+                        <div class="md:col-span-2">
+                            <label for="expense-desc" class="text-sm font-medium text-slate-700">Descripción</label>
+                            <input type="text" id="expense-desc" placeholder="Mercado del mes" class="mt-1 block w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label for="expense-amount" class="text-sm font-medium text-slate-700">Monto</label>
+                            <input type="text" inputmode="decimal" id="expense-amount" placeholder="0" class="mt-1 block w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="expense-category" class="text-sm font-medium text-slate-700">Categoría</label>
+                            <select id="expense-category" class="mt-1 block w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                <option>Alimentación</option>
+                                <option>Transporte</option>
+                                <option>Ocio y Entretenimiento</option>
+                                <option>Educación</option>
+                                <option>Salud</option>
+                                <option>Ropa</option>
+                                <option>Otros</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="md:col-span-2 w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">Añadir Gasto</button>
+                    </form>
+                    <div id="variable-expenses-list" class="mt-6">
+                        <!-- Los gastos variables se añadirán aquí -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna del Dashboard de Análisis -->
+            <div class="space-y-8">
+                
+                <!-- Resumen General -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-4">Análisis Financiero</h2>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-3 bg-slate-100 rounded-md">
+                            <span class="font-medium">Ingresos Totales:</span>
+                            <span id="total-income" class="font-bold text-lg text-green-600">0</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-slate-100 rounded-md">
+                            <span class="font-medium">Gastos Totales:</span>
+                            <span id="total-expenses" class="font-bold text-lg text-red-600">0</span>
+                        </div>
+                        <div class="flex justify-between items-center p-4 bg-slate-200 rounded-md">
+                            <span class="font-semibold text-lg">Flujo de Caja Mensual:</span>
+                            <span id="cash-flow" class="font-extrabold text-2xl">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráfico de Gastos -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-4">Distribución de Gastos</h2>
+                    <div class="w-full max-w-md mx-auto">
+                        <canvas id="expenses-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Diagnóstico y Recomendaciones -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-4">Tu Asesor Financiero Personal</h2>
+                    <div id="diagnosis-container" class="space-y-4">
+                        <button id="diagnose-btn" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors text-lg">
+                            Generar Diagnóstico Financiero
+                        </button>
+                        
+                        <div id="financial-health" class="text-center p-4 rounded-lg mb-4 hidden">
+                            <h3 id="health-status" class="text-lg font-bold"></h3>
+                            <p id="health-message" class="mt-1 text-sm"></p>
+                        </div>
+                        
+                        <div id="detailed-analysis" class="p-3 bg-slate-50 rounded-md border-l-4 border-blue-500 hidden">
+                            <!-- Análisis detallado se insertará aquí -->
+                        </div>
+
+                        <button id="get-plan-btn" class="w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors hidden">
+                            Quiero un Plan Financiero
+                        </button>
+
+                        <div id="recommendations" class="mt-4 space-y-4 text-sm text-slate-700 hidden">
+                            <!-- Las recomendaciones se generarán aquí -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- STATE MANAGEMENT ---
+            let state = {
+                currency: 'COP',
+                variableExpenses: [],
+                currentDiagnosis: null,
+            };
+            let expenseChart = null;
+
+            // --- DOM ELEMENTS ---
+            const currencySelector = document.getElementById('currency');
+            const incomesContainer = document.getElementById('incomes-container');
+            const addIncomeBtn = document.getElementById('add-income');
+            const variableExpenseForm = document.getElementById('variable-expense-form');
+            const variableExpensesList = document.getElementById('variable-expenses-list');
+            const totalIncomeEl = document.getElementById('total-income');
+            const totalExpensesEl = document.getElementById('total-expenses');
+            const cashFlowEl = document.getElementById('cash-flow');
+            
+            // Diagnosis Section Elements
+            const diagnoseBtn = document.getElementById('diagnose-btn');
+            const financialHealthEl = document.getElementById('financial-health');
+            const healthStatusEl = document.getElementById('health-status');
+            const healthMessageEl = document.getElementById('health-message');
+            const detailedAnalysisEl = document.getElementById('detailed-analysis');
+            const getPlanBtn = document.getElementById('get-plan-btn');
+            const recommendationsEl = document.getElementById('recommendations');
+            
+            const chartCanvasEl = document.getElementById('expenses-chart');
+            const chartCanvas = chartCanvasEl.getContext('2d');
+
+            // --- UTILITY FUNCTIONS ---
+            const parseFormattedNumber = (value) => parseFloat(String(value).replace(/\./g, '')) || 0;
+
+            const formatInputAsNumber = (e) => {
+                const input = e.target;
+                const rawValue = input.value.replace(/[^\d]/g, '');
+                input.value = rawValue ? new Intl.NumberFormat('es-CO').format(rawValue) : '';
+            };
+            
+            // --- FORMATTING ---
+            const formatCurrency = (amount) => {
+                const options = { style: 'currency', currency: state.currency, minimumFractionDigits: 0, maximumFractionDigits: 0 };
+                if (state.currency === 'USD') {
+                    options.minimumFractionDigits = 2;
+                    options.maximumFractionDigits = 2;
+                }
+                return new Intl.NumberFormat('es-CO', options).format(amount);
+            };
+
+            // --- EVENT LISTENERS ---
+            currencySelector.addEventListener('change', (e) => {
+                state.currency = e.target.value;
+                updateDashboard();
+            });
+
+            addIncomeBtn.addEventListener('click', () => {
+                const newIncomeDiv = document.createElement('div');
+                newIncomeDiv.className = 'relative';
+                newIncomeDiv.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <div class="flex-grow">
+                             <label class="text-sm font-medium text-slate-700">Otro Ingreso</label>
+                             <input type="text" inputmode="decimal" placeholder="Ej: 500.000" class="mt-1 block w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 data-input">
+                        </div>
+                        <button class="remove-income self-end mb-1 text-slate-400 hover:text-red-600 transition-colors" title="Eliminar ingreso">
+                            <i class="gg-trash"></i>
+                        </button>
+                    </div>
+                `;
+                const newInput = newIncomeDiv.querySelector('input');
+                newInput.addEventListener('input', formatInputAsNumber);
+                newInput.addEventListener('input', updateDashboard);
+                newIncomeDiv.querySelector('.remove-income').addEventListener('click', () => {
+                    newIncomeDiv.remove();
+                    updateDashboard();
+                });
+                incomesContainer.appendChild(newIncomeDiv);
+            });
+
+            variableExpenseForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const description = document.getElementById('expense-desc').value;
+                const amount = parseFormattedNumber(document.getElementById('expense-amount').value);
+                const category = document.getElementById('expense-category').value;
+
+                if (description && amount > 0) {
+                    state.variableExpenses.push({ id: Date.now(), description, amount, category });
+                    renderVariableExpenses();
+                    updateDashboard();
+                    variableExpenseForm.reset();
+                }
+            });
+            
+            document.querySelectorAll('.data-input, #expense-amount').forEach(input => {
+                input.addEventListener('input', formatInputAsNumber);
+                input.addEventListener('input', updateDashboard);
+            });
+
+            diagnoseBtn.addEventListener('click', runDiagnosis);
+            getPlanBtn.addEventListener('click', showFinancialPlan);
+
+            // --- RENDER FUNCTIONS ---
+            const renderVariableExpenses = () => {
+                variableExpensesList.innerHTML = state.variableExpenses.length === 0 
+                    ? `<p class="text-center text-sm text-slate-500">Aún no has añadido gastos variables.</p>` 
+                    : '';
+                if (state.variableExpenses.length > 0) {
+                    const list = document.createElement('ul');
+                    list.className = 'space-y-2';
+                    state.variableExpenses.forEach(expense => {
+                        const item = document.createElement('li');
+                        item.className = 'flex justify-between items-center bg-slate-50 p-2 rounded-md';
+                        item.innerHTML = `
+                            <div>
+                                <span class="font-medium">${expense.description}</span>
+                                <span class="text-xs text-slate-500 block">${expense.category}</span>
+                            </div>
+                            <div class="flex items-center gap-4">
+                               <span class="font-semibold">${formatCurrency(expense.amount)}</span>
+                               <button data-id="${expense.id}" class="remove-expense text-red-500 hover:text-red-700 text-2xl leading-none">&times;</button>
+                            </div>
+                        `;
+                        list.appendChild(item);
+                    });
+                    variableExpensesList.appendChild(list);
+
+                    document.querySelectorAll('.remove-expense').forEach(button => {
+                        button.addEventListener('click', (e) => {
+                            const idToRemove = parseInt(e.target.dataset.id);
+                            state.variableExpenses = state.variableExpenses.filter(exp => exp.id !== idToRemove);
+                            renderVariableExpenses();
+                            updateDashboard();
+                        });
+                    });
+                }
+            };
+
+            const renderChart = (expenseCategories) => {
+                if (expenseChart) expenseChart.destroy();
+                const labels = Object.keys(expenseCategories);
+                const data = Object.values(expenseCategories);
+
+                if (labels.length === 0) {
+                    chartCanvasEl.parentElement.classList.add('hidden');
+                    return;
+                }
+                chartCanvasEl.parentElement.classList.remove('hidden');
+
+                expenseChart = new Chart(chartCanvas, {
+                    type: 'pie',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Gastos por Categoría',
+                            data: data,
+                            backgroundColor: ['rgba(79, 70, 229, 0.8)', 'rgba(239, 68, 68, 0.8)', 'rgba(245, 158, 11, 0.8)', 'rgba(16, 185, 129, 0.8)', 'rgba(59, 130, 246, 0.8)', 'rgba(139, 92, 246, 0.8)', 'rgba(236, 72, 153, 0.8)', 'rgba(96, 165, 250, 0.8)'],
+                            borderColor: 'rgba(255, 255, 255, 1)',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'top' },
+                            tooltip: { callbacks: { label: (context) => `${context.label || ''}: ${formatCurrency(context.parsed)}` } }
+                        }
+                    }
+                });
+            };
+            
+            // --- CORE LOGIC ---
+            function updateDashboard() {
+                let totalIncome = 0;
+                document.querySelectorAll('#incomes-container input').forEach(input => totalIncome += parseFormattedNumber(input.value));
+
+                let totalFixedExpenses = 0;
+                document.querySelectorAll('.fixed-expense').forEach(input => totalFixedExpenses += parseFormattedNumber(input.value));
+
+                const totalVariableExpenses = state.variableExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+                const totalExpenses = totalFixedExpenses + totalVariableExpenses;
+                const cashFlow = totalIncome - totalExpenses;
+
+                totalIncomeEl.textContent = formatCurrency(totalIncome);
+                totalExpensesEl.textContent = formatCurrency(totalExpenses);
+                cashFlowEl.textContent = formatCurrency(cashFlow);
+                cashFlowEl.classList.toggle('text-green-600', cashFlow >= 0);
+                cashFlowEl.classList.toggle('text-red-600', cashFlow < 0);
+
+                const expenseCategories = {};
+                if (totalFixedExpenses > 0) expenseCategories['Gastos Fijos'] = totalFixedExpenses;
+                state.variableExpenses.forEach(exp => {
+                    expenseCategories[exp.category] = (expenseCategories[exp.category] || 0) + exp.amount;
+                });
+                renderChart(expenseCategories);
+
+                resetDiagnosisSection();
+            }
+
+            function resetDiagnosisSection() {
+                diagnoseBtn.classList.remove('hidden');
+                financialHealthEl.classList.add('hidden');
+                detailedAnalysisEl.classList.add('hidden');
+                getPlanBtn.classList.add('hidden');
+                recommendationsEl.classList.add('hidden');
+                state.currentDiagnosis = null;
+            }
+
+            function runDiagnosis() {
+                // Recalculate values directly from the source of truth (inputs and state)
+                let totalIncome = 0;
+                document.querySelectorAll('#incomes-container input').forEach(input => totalIncome += parseFormattedNumber(input.value));
+
+                if (totalIncome === 0) {
+                    // Replace the problematic alert() with a UI message.
+                    financialHealthEl.className = 'text-center p-4 rounded-lg mb-4 bg-amber-100 text-amber-800';
+                    healthStatusEl.textContent = 'Datos Incompletos';
+                    healthMessageEl.textContent = 'Por favor, ingresa primero tus ingresos para poder generar un diagnóstico.';
+                    financialHealthEl.classList.remove('hidden');
+                    detailedAnalysisEl.classList.add('hidden');
+                    getPlanBtn.classList.add('hidden');
+                    return;
+                }
+                
+                let totalFixedExpenses = 0;
+                document.querySelectorAll('.fixed-expense').forEach(input => totalFixedExpenses += parseFormattedNumber(input.value));
+                const totalVariableExpenses = state.variableExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+                const totalExpenses = totalFixedExpenses + totalVariableExpenses;
+                const cashFlow = totalIncome - totalExpenses;
+
+                const savingPercentage = (cashFlow / totalIncome) * 100;
+                let status, message, bgColor, textColor;
+
+                if (cashFlow < 0) {
+                    [status, message, bgColor, textColor] = ['Crítica', '¡Alerta! Estás gastando más de lo que ganas.', 'bg-red-100', 'text-red-800'];
+                } else if (savingPercentage < 10) {
+                    [status, message, bgColor, textColor] = ['En Riesgo', 'Tus gastos son muy cercanos a tus ingresos.', 'bg-amber-100', 'text-amber-800'];
+                } else if (savingPercentage <= 20) {
+                    [status, message, bgColor, textColor] = ['Estable', 'Vas por buen camino, pero hay oportunidades.', 'bg-blue-100', 'text-blue-800'];
+                } else {
+                    [status, message, bgColor, textColor] = ['Saludable', '¡Excelente! Estás construyendo un futuro sólido.', 'bg-green-100', 'text-green-800'];
+                }
+
+                financialHealthEl.className = `text-center p-4 rounded-lg mb-4 ${bgColor} ${textColor}`;
+                healthStatusEl.textContent = `Salud Financiera: ${status}`;
+                healthMessageEl.textContent = message;
+
+                // Detailed Analysis
+                const fixedPercentage = totalIncome > 0 ? (totalFixedExpenses / totalIncome * 100).toFixed(1) : 0;
+                const variablePercentage = totalIncome > 0 ? (totalVariableExpenses / totalIncome * 100).toFixed(1) : 0;
+                detailedAnalysisEl.innerHTML = `
+                    <h4 class="font-semibold text-slate-900">Análisis de Gastos</h4>
+                    <p class="mt-1">Tus <strong>gastos fijos</strong> representan el <strong>${fixedPercentage}%</strong> de tus ingresos.</p>
+                    <p class="mt-1">Tus <strong>gastos variables</strong> representan el <strong>${variablePercentage}%</strong> de tus ingresos.</p>
+                `;
+
+                diagnoseBtn.classList.add('hidden');
+                financialHealthEl.classList.remove('hidden');
+                detailedAnalysisEl.classList.remove('hidden');
+                getPlanBtn.classList.remove('hidden');
+
+                // Store diagnosis for the next step
+                const expenseCategories = {};
+                if (totalFixedExpenses > 0) expenseCategories['Gastos Fijos'] = totalFixedExpenses;
+                state.variableExpenses.forEach(exp => {
+                    expenseCategories[exp.category] = (expenseCategories[exp.category] || 0) + exp.amount;
+                });
+                state.currentDiagnosis = { status, expenseCategories };
+            }
+
+            function showFinancialPlan() {
+                if (!state.currentDiagnosis) return;
+                
+                const { status, expenseCategories } = state.currentDiagnosis;
+                generateRecommendations(status, expenseCategories);
+
+                getPlanBtn.classList.add('hidden');
+                recommendationsEl.classList.remove('hidden');
+            }
+
+            function generateRecommendations(status, expenseCategories) {
+                recommendationsEl.innerHTML = '';
+                const addRecommendation = (title, text) => {
+                    recommendationsEl.innerHTML += `
+                        <div class="p-3 bg-slate-50 rounded-md border-l-4 border-indigo-500">
+                            <h4 class="font-semibold text-slate-900">${title}</h4>
+                            <p class="mt-1">${text}</p>
+                        </div>`;
+                };
+
+                switch (status) {
+                    case 'Crítica':
+                        const highestCategory = Object.entries(expenseCategories).reduce((max, entry) => entry[1] > max[1] ? entry : max, ["", 0])[0];
+                        addRecommendation('1. Plan de Choque: Reducción de Gastos', `Tu categoría de gasto más alta es <strong>${highestCategory || 'desconocida'}</strong>. Es crucial que revises cada transacción en esta área para identificar recortes inmediatos. Cancela suscripciones que no uses y busca alternativas más económicas.`);
+                        addRecommendation('2. Congela el Uso de Crédito', 'Evita acumular más deudas. Guarda las tarjetas de crédito y enfócate en usar solo el dinero que tienes disponible. Cada peso de nueva deuda agrava la situación.');
+                        addRecommendation('3. Explora Fuentes de Ingreso Adicionales', 'Considera opciones para aumentar tus ingresos, aunque sea temporalmente. Vender artículos que no usas, realizar trabajos freelance o buscar un trabajo de medio tiempo pueden darte el respiro que necesitas.');
+                        break;
+                    case 'En Riesgo':
+                        addRecommendation('1. Automatiza tu Ahorro ("Págate a ti mismo primero")', 'Configura una transferencia automática del 5% al 10% de tu salario a una cuenta de ahorros, justo el día que recibes tu pago. Así, ahorras sin pensarlo.');
+                        addRecommendation('2. Caza tus "Gastos Hormiga"', 'Durante una semana, anota cada pequeño gasto (café, snacks, etc.). Te sorprenderá cuánto suman. Identifica patrones y reduce al menos el 50% de estos gastos no esenciales.');
+                        addRecommendation('3. Presupuesto 50/30/20', 'Aplica esta regla como guía: 50% de tus ingresos para necesidades (vivienda, servicios), 30% para deseos (ocio, compras) y 20% para ahorro y pago de deudas. Ajusta tus gastos actuales para acercarte a esta meta.');
+                        break;
+                    case 'Estable':
+                        addRecommendation('1. Crea y Fortalece tu Fondo de Emergencia', 'Tu primera meta debe ser acumular un fondo que cubra de 3 a 6 meses de tus gastos fijos. Esto te protegerá de imprevistos sin necesidad de endeudarte.');
+                        addRecommendation('2. Incrementa tu Porcentaje de Ahorro', 'Estás en una buena posición para mejorar. Rétate a ti mismo a aumentar tu tasa de ahorro en un 1% cada mes. En un año, estarás ahorrando un 12% adicional de tus ingresos.');
+                        addRecommendation('3. Empieza tu Educación en Inversiones', 'Tu dinero podría estar creciendo. Dedica tiempo a aprender sobre opciones de inversión de bajo riesgo, como fondos indexados o bonos gubernamentales. El conocimiento es el primer paso para la riqueza.');
+                        break;
+                    case 'Saludable':
+                        addRecommendation('1. Define Metas Financieras Claras y Ambiciosas', 'Ahora que tienes control, ¿qué quieres lograr? Comprar una vivienda, jubilarte joven, viajar por el mundo. Ponle cifras y fechas a tus sueños para crear un plan de inversión concreto.');
+                        addRecommendation('2. Optimiza tu Portafolio de Inversión', 'No te conformes con ahorrar. Asegúrate de que tu dinero esté invertido de forma diversificada y alineada con tus metas y tolerancia al riesgo. Considera buscar asesoría profesional.');
+                        addRecommendation('3. Planifica para la Eficiencia Fiscal', 'Investiga sobre productos financieros que ofrezcan beneficios fiscales en tu país, como planes de pensiones voluntarias o cuentas de ahorro para la vivienda. Pagar menos impuestos legalmente es una forma inteligente de aumentar tu patrimonio.');
+                        break;
+                }
+            }
+
+            // --- INITIALIZATION ---
+            renderVariableExpenses();
+            updateDashboard();
+        });
+    </script>
+</body>
+</html>
