@@ -14,7 +14,7 @@
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://css.gg/css?=|trash" rel="stylesheet">
+    <link href="https://css.gg/css?=|trash|reload" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
@@ -154,7 +154,13 @@
 
                 <!-- Diagnóstico y Recomendaciones -->
                 <div class="bg-white p-6 rounded-lg shadow-md">
-                    <h2 class="text-xl font-semibold mb-4">Tu Asesor Financiero Personal</h2>
+                    <div class="flex justify-between items-start mb-4">
+                        <h2 class="text-xl font-semibold">Tu Asesor Financiero Personal</h2>
+                        <button id="reset-btn" title="Resetear todos los datos" class="flex items-center gap-2 text-sm bg-slate-200 hover:bg-red-200 text-slate-700 hover:text-red-800 font-semibold py-1 px-3 rounded-lg transition-colors">
+                            <i class="gg-reload"></i>
+                            Resetear
+                        </button>
+                    </div>
                     <div id="diagnosis-container" class="space-y-4">
                         <button id="diagnose-btn" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors text-lg">
                             Generar Diagnóstico Financiero
@@ -168,14 +174,25 @@
                         <div id="detailed-analysis" class="p-3 bg-slate-50 rounded-md border-l-4 border-blue-500 hidden">
                             <!-- Análisis detallado se insertará aquí -->
                         </div>
-
-                        <button id="get-plan-btn" class="w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors hidden">
-                            Quiero un Plan Financiero
-                        </button>
-
+                        
                         <div id="recommendations" class="mt-4 space-y-4 text-sm text-slate-700 hidden">
                             <!-- Las recomendaciones se generarán aquí -->
                         </div>
+
+                        <div id="investor-profile-container" class="p-4 bg-slate-100 rounded-lg hidden">
+                            <h4 class="font-semibold text-center text-slate-800 mb-3">¿Listo para Invertir? Define tu Perfil</h4>
+                            <p class="text-center text-xs text-slate-600 mb-3">Tu elección determinará las estrategias de inversión recomendadas.</p>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <button data-profile="conservador" class="profile-btn w-full bg-sky-600 text-white font-semibold py-2 px-3 rounded-md hover:bg-sky-700 transition-colors">Conservador</button>
+                                <button data-profile="moderado" class="profile-btn w-full bg-amber-600 text-white font-semibold py-2 px-3 rounded-md hover:bg-amber-700 transition-colors">Moderado</button>
+                                <button data-profile="agresivo" class="profile-btn w-full bg-red-600 text-white font-semibold py-2 px-3 rounded-md hover:bg-red-700 transition-colors">Agresivo</button>
+                            </div>
+                        </div>
+                        
+                        <div id="investment-recommendations" class="mt-4 space-y-4 text-sm text-slate-700 hidden">
+                            <!-- Las recomendaciones de inversión se generarán aquí -->
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -189,6 +206,7 @@
                 currency: 'COP',
                 variableExpenses: [],
                 currentDiagnosis: null,
+                investorProfile: null,
             };
             let expenseChart = null;
 
@@ -203,13 +221,15 @@
             const cashFlowEl = document.getElementById('cash-flow');
             
             // Diagnosis Section Elements
+            const resetBtn = document.getElementById('reset-btn');
             const diagnoseBtn = document.getElementById('diagnose-btn');
             const financialHealthEl = document.getElementById('financial-health');
             const healthStatusEl = document.getElementById('health-status');
             const healthMessageEl = document.getElementById('health-message');
             const detailedAnalysisEl = document.getElementById('detailed-analysis');
-            const getPlanBtn = document.getElementById('get-plan-btn');
+            const investorProfileContainer = document.getElementById('investor-profile-container');
             const recommendationsEl = document.getElementById('recommendations');
+            const investmentRecommendationsEl = document.getElementById('investment-recommendations');
             
             const chartCanvasEl = document.getElementById('expenses-chart');
             const chartCanvas = chartCanvasEl.getContext('2d');
@@ -283,7 +303,13 @@
             });
 
             diagnoseBtn.addEventListener('click', runDiagnosis);
-            getPlanBtn.addEventListener('click', showFinancialPlan);
+            investorProfileContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('profile-btn')) {
+                    state.investorProfile = e.target.dataset.profile;
+                    showInvestmentPlan();
+                }
+            });
+            resetBtn.addEventListener('click', resetAllData);
 
             // --- RENDER FUNCTIONS ---
             const renderVariableExpenses = () => {
@@ -381,29 +407,39 @@
 
                 resetDiagnosisSection();
             }
+            
+            function resetAllData() {
+                document.querySelectorAll('.data-input').forEach(input => input.value = '');
+                const dynamicIncomes = incomesContainer.querySelectorAll('div:not(:first-child)');
+                dynamicIncomes.forEach(div => div.remove());
+                variableExpenseForm.reset();
+                state.variableExpenses = [];
+                renderVariableExpenses();
+                updateDashboard();
+            }
 
             function resetDiagnosisSection() {
                 diagnoseBtn.classList.remove('hidden');
                 financialHealthEl.classList.add('hidden');
                 detailedAnalysisEl.classList.add('hidden');
-                getPlanBtn.classList.add('hidden');
+                investorProfileContainer.classList.add('hidden');
                 recommendationsEl.classList.add('hidden');
+                investmentRecommendationsEl.classList.add('hidden');
                 state.currentDiagnosis = null;
+                state.investorProfile = null;
             }
 
             function runDiagnosis() {
-                // Recalculate values directly from the source of truth (inputs and state)
                 let totalIncome = 0;
                 document.querySelectorAll('#incomes-container input').forEach(input => totalIncome += parseFormattedNumber(input.value));
 
                 if (totalIncome === 0) {
-                    // Replace the problematic alert() with a UI message.
                     financialHealthEl.className = 'text-center p-4 rounded-lg mb-4 bg-amber-100 text-amber-800';
                     healthStatusEl.textContent = 'Datos Incompletos';
                     healthMessageEl.textContent = 'Por favor, ingresa primero tus ingresos para poder generar un diagnóstico.';
                     financialHealthEl.classList.remove('hidden');
                     detailedAnalysisEl.classList.add('hidden');
-                    getPlanBtn.classList.add('hidden');
+                    investorProfileContainer.classList.add('hidden');
                     return;
                 }
                 
@@ -417,20 +453,19 @@
                 let status, message, bgColor, textColor;
 
                 if (cashFlow < 0) {
-                    [status, message, bgColor, textColor] = ['Crítica', '¡Alerta! Estás gastando más de lo que ganas.', 'bg-red-100', 'text-red-800'];
+                    [status, message, bgColor, textColor] = ['Crítica', 'Estás en un punto de inflexión. ¡Es el momento perfecto para tomar decisiones valientes!', 'bg-red-100', 'text-red-800'];
                 } else if (savingPercentage < 10) {
-                    [status, message, bgColor, textColor] = ['En Riesgo', 'Tus gastos son muy cercanos a tus ingresos.', 'bg-amber-100', 'text-amber-800'];
+                    [status, message, bgColor, textColor] = ['En Riesgo', 'Estás cerca del equilibrio. Unos pequeños ajustes estratégicos harán una gran diferencia.', 'bg-amber-100', 'text-amber-800'];
                 } else if (savingPercentage <= 20) {
-                    [status, message, bgColor, textColor] = ['Estable', 'Vas por buen camino, pero hay oportunidades.', 'bg-blue-100', 'text-blue-800'];
+                    [status, message, bgColor, textColor] = ['Estable', 'Has construido una base sólida. Es momento de pasar de ahorrar a construir patrimonio.', 'bg-blue-100', 'text-blue-800'];
                 } else {
-                    [status, message, bgColor, textColor] = ['Saludable', '¡Excelente! Estás construyendo un futuro sólido.', 'bg-green-100', 'text-green-800'];
+                    [status, message, bgColor, textColor] = ['Saludable', '¡Excelente! Tienes el control. Ahora el juego es optimizar y acelerar tu crecimiento.', 'bg-green-100', 'text-green-800'];
                 }
 
                 financialHealthEl.className = `text-center p-4 rounded-lg mb-4 ${bgColor} ${textColor}`;
                 healthStatusEl.textContent = `Salud Financiera: ${status}`;
                 healthMessageEl.textContent = message;
 
-                // Detailed Analysis
                 const fixedPercentage = totalIncome > 0 ? (totalFixedExpenses / totalIncome * 100).toFixed(1) : 0;
                 const variablePercentage = totalIncome > 0 ? (totalVariableExpenses / totalIncome * 100).toFixed(1) : 0;
                 detailedAnalysisEl.innerHTML = `
@@ -442,29 +477,33 @@
                 diagnoseBtn.classList.add('hidden');
                 financialHealthEl.classList.remove('hidden');
                 detailedAnalysisEl.classList.remove('hidden');
-                getPlanBtn.classList.remove('hidden');
-
-                // Store diagnosis for the next step
+                
                 const expenseCategories = {};
                 if (totalFixedExpenses > 0) expenseCategories['Gastos Fijos'] = totalFixedExpenses;
                 state.variableExpenses.forEach(exp => {
                     expenseCategories[exp.category] = (expenseCategories[exp.category] || 0) + exp.amount;
                 });
                 state.currentDiagnosis = { status, expenseCategories };
-            }
 
-            function showFinancialPlan() {
-                if (!state.currentDiagnosis) return;
-                
-                const { status, expenseCategories } = state.currentDiagnosis;
-                generateRecommendations(status, expenseCategories);
-
-                getPlanBtn.classList.add('hidden');
+                generateInitialRecommendations(status, expenseCategories);
                 recommendationsEl.classList.remove('hidden');
+
+                if (status === 'Estable' || status === 'Saludable') {
+                    investorProfileContainer.classList.remove('hidden');
+                }
             }
 
-            function generateRecommendations(status, expenseCategories) {
-                recommendationsEl.innerHTML = '';
+            function showInvestmentPlan() {
+                if (!state.currentDiagnosis || !state.investorProfile) return;
+                
+                generateInvestmentRecommendations(state.investorProfile);
+
+                investorProfileContainer.classList.add('hidden');
+                investmentRecommendationsEl.classList.remove('hidden');
+            }
+
+            function generateInitialRecommendations(status, expenseCategories) {
+                recommendationsEl.innerHTML = ' <h4 class="font-semibold text-xl text-slate-800 mb-2">Tu Plan de Acción Inicial</h4>';
                 const addRecommendation = (title, text) => {
                     recommendationsEl.innerHTML += `
                         <div class="p-3 bg-slate-50 rounded-md border-l-4 border-indigo-500">
@@ -472,28 +511,55 @@
                             <p class="mt-1">${text}</p>
                         </div>`;
                 };
-
+                
                 switch (status) {
                     case 'Crítica':
-                        const highestCategory = Object.entries(expenseCategories).reduce((max, entry) => entry[1] > max[1] ? entry : max, ["", 0])[0];
-                        addRecommendation('1. Plan de Choque: Reducción de Gastos', `Tu categoría de gasto más alta es <strong>${highestCategory || 'desconocida'}</strong>. Es crucial que revises cada transacción en esta área para identificar recortes inmediatos. Cancela suscripciones que no uses y busca alternativas más económicas.`);
-                        addRecommendation('2. Congela el Uso de Crédito', 'Evita acumular más deudas. Guarda las tarjetas de crédito y enfócate en usar solo el dinero que tienes disponible. Cada peso de nueva deuda agrava la situación.');
-                        addRecommendation('3. Explora Fuentes de Ingreso Adicionales', 'Considera opciones para aumentar tus ingresos, aunque sea temporalmente. Vender artículos que no usas, realizar trabajos freelance o buscar un trabajo de medio tiempo pueden darte el respiro que necesitas.');
+                        addRecommendation('Tu Misión para Hoy: La Victoria de los 10 Minutos', 'Olvídate de todo lo demás. Tu único objetivo ahora es tomar UNA decisión que te devuelva el control. Cancela UNA suscripción, haz UNA llamada para negociar un pago. El objetivo no es el dinero, es la victoria psicológica. ¡Hazlo ahora!');
+                        addRecommendation('Estrategia "Bola de Nieve": El Poder de la Motivación', 'Enfócate en tu deuda más pequeña, sin importar la tasa de interés. Atácala con todo lo que puedas. Al eliminarla rápido, obtendrás una inyección de confianza que te impulsará a conquistar la siguiente. Esto es más sobre psicología que sobre matemáticas.');
+                        addRecommendation('Táctica de Control: La "Caja de Efectivo Semanal"', 'Saca en efectivo el dinero para tus gastos variables de la semana (comida, transporte). Usa SOLO ese dinero. Verlo disminuir físicamente te reconecta con el valor real de tus gastos, algo que el dinero digital oculta.');
                         break;
                     case 'En Riesgo':
-                        addRecommendation('1. Automatiza tu Ahorro ("Págate a ti mismo primero")', 'Configura una transferencia automática del 5% al 10% de tu salario a una cuenta de ahorros, justo el día que recibes tu pago. Así, ahorras sin pensarlo.');
-                        addRecommendation('2. Caza tus "Gastos Hormiga"', 'Durante una semana, anota cada pequeño gasto (café, snacks, etc.). Te sorprenderá cuánto suman. Identifica patrones y reduce al menos el 50% de estos gastos no esenciales.');
-                        addRecommendation('3. Presupuesto 50/30/20', 'Aplica esta regla como guía: 50% de tus ingresos para necesidades (vivienda, servicios), 30% para deseos (ocio, compras) y 20% para ahorro y pago de deudas. Ajusta tus gastos actuales para acercarte a esta meta.');
+                        addRecommendation('Hábito Atómico: La Regla del 1%', 'Cada mes, aumenta tu tasa de ahorro en solo un 1%. Es un cambio tan pequeño que no lo sentirás en tu día a día, pero en un año estarás ahorrando un 12% adicional de tus ingresos sin esfuerzo y sin sacrificar tu estilo de vida.');
+                        addRecommendation('Técnica de Conciencia: "Auditoría de Felicidad por Gasto"', 'Al final de la semana, mira tus gastos variables y califícalos del 1 al 10 según la felicidad que te aportaron. Te sorprenderá ver cuánto dinero se va en gastos de baja calificación (3/10, 4/10). El próximo mes, tu misión es reducir solo esos.');
+                        addRecommendation('Reto de 48 Horas: "El Enfriamiento"', 'Para cualquier compra no esencial superior a $50.000 COP / $15 USD, ponla en una lista de "enfriamiento" por 48 horas. Si después de dos días todavía la quieres y es una decisión inteligente, adelante. El 90% de los impulsos no sobrevivirán.');
                         break;
                     case 'Estable':
-                        addRecommendation('1. Crea y Fortalece tu Fondo de Emergencia', 'Tu primera meta debe ser acumular un fondo que cubra de 3 a 6 meses de tus gastos fijos. Esto te protegerá de imprevistos sin necesidad de endeudarte.');
-                        addRecommendation('2. Incrementa tu Porcentaje de Ahorro', 'Estás en una buena posición para mejorar. Rétate a ti mismo a aumentar tu tasa de ahorro en un 1% cada mes. En un año, estarás ahorrando un 12% adicional de tus ingresos.');
-                        addRecommendation('3. Empieza tu Educación en Inversiones', 'Tu dinero podría estar creciendo. Dedica tiempo a aprender sobre opciones de inversión de bajo riesgo, como fondos indexados o bonos gubernamentales. El conocimiento es el primer paso para la riqueza.');
+                        addRecommendation('Fundamento Sólido: El Fondo "Anti-Murphy"', 'Olvídate de los "6 meses de gastos". Tu primera meta es un fondo de emergencia de un millón de pesos (o $250 USD). Es tu barrera contra pequeñas crisis (una llanta pinchada, una cita médica). Es una meta rápida y te dará una inmensa paz mental.');
+                        addRecommendation('Acelerador de Riqueza: Invierte en tu "Capital Humano"', 'Tu mayor activo eres tú. Usa una parte de tu ahorro para adquirir una habilidad de alta demanda (certificación en marketing digital, un curso de IA, etc.). El retorno de esta inversión puede superar por mucho al del mercado de valores.');
+                        addRecommendation('Siguiente Nivel: Tu Primer "Micro-Portafolio"', 'La inversión no tiene por qué ser compleja. Ahora que tienes una base, es el momento de poner tu dinero a trabajar. Define tu perfil de inversor a continuación para recibir estrategias claras.');
                         break;
                     case 'Saludable':
-                        addRecommendation('1. Define Metas Financieras Claras y Ambiciosas', 'Ahora que tienes control, ¿qué quieres lograr? Comprar una vivienda, jubilarte joven, viajar por el mundo. Ponle cifras y fechas a tus sueños para crear un plan de inversión concreto.');
-                        addRecommendation('2. Optimiza tu Portafolio de Inversión', 'No te conformes con ahorrar. Asegúrate de que tu dinero esté invertido de forma diversificada y alineada con tus metas y tolerancia al riesgo. Considera buscar asesoría profesional.');
-                        addRecommendation('3. Planifica para la Eficiencia Fiscal', 'Investiga sobre productos financieros que ofrezcan beneficios fiscales en tu país, como planes de pensiones voluntarias o cuentas de ahorro para la vivienda. Pagar menos impuestos legalmente es una forma inteligente de aumentar tu patrimonio.');
+                        addRecommendation('Estrategia de Crecimiento: El "Fondo de Oportunidades"', 'Además de tu fondo de emergencia, crea un "Fondo de Oportunidades". Es dinero líquido destinado a aprovechar caídas del mercado o ideas de negocio inesperadas. Cuando todos venden por pánico, tú compras con calma.');
+                        addRecommendation('Optimización Avanzada: Eficiencia Fiscal', 'Investiga sobre productos financieros que ofrezcan beneficios fiscales en tu país (pensiones voluntarias, AFCs). Pagar menos impuestos legalmente es una forma sofisticada de acelerar tu patrimonio.');
+                        addRecommendation('Visión a Largo Plazo: Define tu Estrategia de Inversión', 'Tienes el control de tus finanzas. Es hora de que tu dinero trabaje tan duro como tú. Elige tu perfil de inversor a continuación para diseñar tu portafolio ideal.');
+                        break;
+                }
+            }
+            
+            function generateInvestmentRecommendations(profile) {
+                investmentRecommendationsEl.innerHTML = '<h4 class="font-semibold text-xl text-slate-800 mb-2">Estrategias de Inversión Potentes</h4>';
+                const addRecommendation = (title, text) => {
+                    investmentRecommendationsEl.innerHTML += `
+                        <div class="p-3 bg-slate-50 rounded-md border-l-4 border-green-500">
+                            <h4 class="font-semibold text-slate-900">${title}</h4>
+                            <p class="mt-1">${text}</p>
+                        </div>`;
+                };
+
+                addRecommendation(`Plan de Inversión para un Perfil ${profile.charAt(0).toUpperCase() + profile.slice(1)}`, `Basado en tu perfil, aquí tienes una estrategia de inversión potente y clara para empezar a construir tu patrimonio.`);
+
+                switch(profile) {
+                    case 'conservador':
+                        addRecommendation('Estrategia "Escalera de Bonos"', 'En lugar de poner todo en un solo CDT, diversifica en varios con diferentes vencimientos (ej. a 90, 180, 365 días). A medida que venzan, los reinviertes a las tasas actuales. Esto te protege de las fluctuaciones de las tasas de interés y te da liquidez periódica.');
+                        addRecommendation('El Pilar Inmobiliario: FIBRAS/REITs', 'Invierte en el mercado inmobiliario sin comprar una propiedad. Los fondos de inversión inmobiliaria (FIBRAS en México, REITs en USA, o a través de fondos en Colombia) te permiten recibir rentas de centros comerciales, oficinas, etc., con bajo capital y alta diversificación.');
+                        break;
+                    case 'moderado':
+                        addRecommendation('El Núcleo de tu Portafolio: La Estrategia "Core-Satellite"', 'Asigna el 70% de tu inversión ("Core") a un ETF de bajo costo que siga al mercado global (ej. VT). Usa el 30% restante ("Satellite") para apuestas más concentradas, como un ETF del sector tecnológico (ej. QQQ) o acciones de una empresa local que conozcas bien.');
+                        addRecommendation('Inversión Temática: Megatendencias', 'Dedica una pequeña parte de tu portafolio a invertir en el futuro. Elige una o dos "megatendencias" que creas que dominarán los próximos años (ej. Inteligencia Artificial, Energías Limpias, Ciberseguridad) e invierte a través de ETFs especializados.');
+                        break;
+                    case 'agresivo':
+                        addRecommendation('Potencial de Crecimiento: Acciones "Small-Cap"', 'Las grandes empresas ya crecieron. El verdadero potencial exponencial está en las empresas más pequeñas e innovadoras ("small-caps"). Invierte a través de un ETF (ej. IWM) para diversificar el riesgo y capturar el crecimiento de las futuras líderes del mercado.');
+                        addRecommendation('La Frontera Digital: Activos Digitales con Propósito', 'Más allá de la especulación, asigna un 1-3% de tu portafolio a criptoactivos sólidos con casos de uso claros (ej. Ethereum para contratos inteligentes, o proyectos de finanzas descentralizadas - DeFi). Es una apuesta asimétrica: el riesgo es limitado, pero el potencial de ganancia es enorme.');
                         break;
                 }
             }
