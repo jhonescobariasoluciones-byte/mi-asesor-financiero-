@@ -11,6 +11,9 @@
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
+    <!-- Chart.js Datalabels Plugin for percentages -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+
     <!-- jsPDF and html2canvas for PDF Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -358,6 +361,9 @@
                     });
                 }
             };
+            
+            // Register the datalabels plugin globally
+            Chart.register(ChartDataLabels);
 
             const renderChart = (expenseCategories) => {
                 if (expenseChart) expenseChart.destroy();
@@ -385,8 +391,27 @@
                     options: {
                         responsive: true,
                         plugins: {
-                            legend: { position: 'top' },
-                            tooltip: { callbacks: { label: (context) => `${context.label || ''}: ${formatCurrency(context.parsed)}` } }
+                            legend: { 
+                                position: 'top' 
+                            },
+                            tooltip: { 
+                                callbacks: { 
+                                    label: (context) => `${context.label || ''}: ${formatCurrency(context.parsed)}` 
+                                } 
+                            },
+                            datalabels: {
+                                formatter: (value, ctx) => {
+                                    const datapoints = ctx.chart.data.datasets[0].data;
+                                    const total = datapoints.reduce((total, datapoint) => total + datapoint, 0);
+                                    const percentage = (value / total * 100);
+                                    return percentage > 5 ? percentage.toFixed(1) + "%" : ''; // Only show for slices > 5%
+                                },
+                                color: '#fff',
+                                font: {
+                                    weight: 'bold',
+                                    size: 14,
+                                }
+                            }
                         }
                     }
                 });
@@ -582,67 +607,110 @@
 
             function exportToPDF() {
                 const { jsPDF } = window.jspdf;
-                const reportContent = document.getElementById('report-content');
+                const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
                 const exportButton = document.getElementById('export-pdf-btn');
-                
-                // Ocultar el botón de reseteo temporalmente para que no aparezca en el PDF
-                const originalResetBtnDisplay = resetBtn.style.display;
-                resetBtn.style.display = 'none';
                 exportButton.textContent = 'Generando PDF...';
 
-                html2canvas(reportContent, { 
-                    scale: 2, // Aumentar la escala para mejor calidad de imagen
-                    useCORS: true 
-                }).then(canvas => {
-                    const imgData = canvas.toDataURL('image/png');
-                    const pdf = new jsPDF({
-                        orientation: 'p',
-                        unit: 'mm',
-                        format: 'a4'
-                    });
+                let y = 15; // Posición Y inicial
+                const pageHeight = pdf.internal.pageSize.getHeight();
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const margin = 15;
+                const maxWidth = pageWidth - margin * 2;
 
-                    const pdfWidth = pdf.internal.pageSize.getWidth();
-                    const pdfHeight = pdf.internal.pageSize.getHeight();
-                    const canvasWidth = canvas.width;
-                    const canvasHeight = canvas.height;
-                    const ratio = canvasWidth / canvasHeight;
-                    const imgWidth = pdfWidth - 20; // Con márgenes de 10mm a cada lado
-                    let imgHeight = imgWidth / ratio;
-                    let heightLeft = imgHeight;
-                    
-                    let position = 10; // Posición Y inicial con margen superior
-
-                    pdf.setFont('Inter', 'bold');
-                    pdf.setFontSize(20);
-                    pdf.text('Mi Primer Plan Financiero', pdfWidth / 2, position, { align: 'center' });
-                    position += 15;
-
-                    // Lógica para manejar contenido que excede una página
-                    if (imgHeight > pdfHeight - 30) {
-                        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-                        heightLeft -= (pdfHeight - 30);
-
-                        while (heightLeft > 0) {
-                            position = heightLeft - imgHeight;
-                            pdf.addPage();
-                            pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-                            heightLeft -= (pdfHeight - 20);
-                        }
-                    } else {
-                         pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+                // --- Helper para añadir secciones y manejar saltos de página ---
+                const addSection = (title, contentFn) => {
+                    if (y + 20 > pageHeight - margin) { // Espacio para el título
+                        pdf.addPage();
+                        y = margin;
                     }
-                    
-                    pdf.save('Mi-Primer-Plan-Financiero.pdf');
+                    pdf.setFontSize(16);
+                    pdf.setFont(undefined, 'bold');
+                    pdf.text(title, margin, y);
+                    y += 8;
+                    pdf.setFont(undefined, 'normal');
+                    pdf.setFontSize(11);
+                    contentFn();
+                };
+                
+                // --- Helper para texto con auto-wrap ---
+                const addWrappedText = (text, options = {}) => {
+                    const lines = pdf.splitTextToSize(text, options.maxWidth || maxWidth);
+                    const lineHeight = 6;
+                    if (y + (lines.length * lineHeight) > pageHeight - margin) {
+                        pdf.addPage();
+                        y = margin;
+                    }
+                    pdf.text(lines, margin + (options.indent || 0), y);
+                    y += lines.length * lineHeight;
+                };
 
-                    // Restaurar la visibilidad del botón de reseteo
-                    resetBtn.style.display = originalResetBtnDisplay;
-                    exportButton.textContent = 'Mi Primer Plan Financiero (PDF)';
-                }).catch(err => {
-                    console.error("Error al generar el PDF:", err);
-                    // Restaurar en caso de error
-                    resetBtn.style.display = originalResetBtnDisplay;
-                    exportButton.textContent = 'Mi Primer Plan Financiero (PDF)';
+                // --- Construcción del PDF ---
+                // Título
+                pdf.setFontSize(24);
+                pdf.setFont(undefined, 'bold');
+                pdf.text("Mi Primer Plan Financiero", pageWidth / 2, y, { align: 'center' });
+                y += 8;
+                pdf.setFontSize(10);
+                pdf.setFont(undefined, 'normal');
+                pdf.text(`Reporte generado el: ${new Date().toLocaleDateString('es-ES')}`, pageWidth / 2, y, { align: 'center' });
+                y += 15;
+
+                // Sección de Resumen
+                addSection("1. Resumen Financiero", () => {
+                    pdf.text(`Ingresos Totales: ${totalIncomeEl.textContent}`, margin, y); y += 7;
+                    pdf.text(`Gastos Totales: ${totalExpensesEl.textContent}`, margin, y); y += 7;
+                    pdf.text(`Flujo de Caja Mensual: ${cashFlowEl.textContent}`, margin, y); y += 10;
+                    pdf.setFont(undefined, 'bold');
+                    pdf.text(`Diagnóstico: ${healthStatusEl.textContent}`, margin, y); y += 7;
+                    pdf.setFont(undefined, 'normal');
+                    addWrappedText(healthMessageEl.textContent);
+                    y += 5;
                 });
+
+                // Sección de Gráfico
+                addSection("2. Distribución de Gastos", () => {
+                    const chartImage = chartCanvasEl.toDataURL('image/png', 1.0);
+                    const chartHeight = 80;
+                    if (y + chartHeight > pageHeight - margin) {
+                        pdf.addPage();
+                        y = margin;
+                    }
+                    pdf.addImage(chartImage, 'PNG', margin, y, 100, chartHeight);
+                    y += chartHeight + 10;
+                });
+
+                // Sección de Plan de Acción
+                addSection("3. Tu Plan de Acción Inicial", () => {
+                    recommendationsEl.querySelectorAll('div').forEach(rec => {
+                        const title = rec.querySelector('h4').innerText;
+                        const text = rec.querySelector('p').innerText;
+                        pdf.setFont(undefined, 'bold');
+                        addWrappedText(title);
+                        y += 2;
+                        pdf.setFont(undefined, 'normal');
+                        addWrappedText(text, { indent: 5 });
+                        y += 8;
+                    });
+                });
+                
+                // Sección de Inversión (Condicional)
+                if (state.investorProfile) {
+                    addSection("4. Estrategias de Inversión", () => {
+                        investmentRecommendationsEl.querySelectorAll('div').forEach(rec => {
+                            const title = rec.querySelector('h4').innerText;
+                            const text = rec.querySelector('p').innerText;
+                            pdf.setFont(undefined, 'bold');
+                            addWrappedText(title);
+                            y += 2;
+                            pdf.setFont(undefined, 'normal');
+                            addWrappedText(text, { indent: 5 });
+                            y += 8;
+                        });
+                    });
+                }
+                
+                pdf.save('Mi-Primer-Plan-Financiero.pdf');
+                exportButton.textContent = 'Mi Primer Plan Financiero (PDF)';
             }
 
             // --- INITIALIZATION ---
