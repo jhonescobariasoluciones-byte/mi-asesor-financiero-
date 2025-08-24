@@ -191,32 +191,59 @@
                 container.innerHTML = '';
                 let periods = 0;
                 let periodLabel = '';
-                if(goal.frequency === 'semanal') { periods = 4; periodLabel = 'S'; }
-                else if (goal.frequency === 'quincenal') { periods = 2; periodLabel = 'Q'; }
-                else { periods = 1; periodLabel = 'Mes'; }
-
+                
                 const now = new Date();
                 const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-                const checkedPeriods = (goal.progress && goal.progress[currentMonthKey]) ? goal.progress[currentMonthKey] : 0;
+                const checkedPeriods = (goal.progress && goal.progress[currentMonthKey]) ? goal.progress[currentMonthKey] : [];
 
-                for(let i = 1; i <= periods; i++) {
-                    const isChecked = i <= checkedPeriods;
+                let currentPeriod = 1;
+                if (goal.frequency === 'semanal') {
+                    periods = 4;
+                    periodLabel = 'S';
+                    currentPeriod = Math.ceil(now.getDate() / 7.5); // Adjusted for better week distribution
+                } else if (goal.frequency === 'quincenal') {
+                    periods = 2;
+                    periodLabel = 'Q';
+                    currentPeriod = now.getDate() <= 15 ? 1 : 2;
+                } else {
+                    periods = 1;
+                    periodLabel = 'Mes';
+                }
+
+                for (let i = 1; i <= periods; i++) {
+                    const isChecked = checkedPeriods.includes(i);
+                    const isPast = i < currentPeriod && !isChecked;
+
                     const trackerItem = document.createElement('div');
+                    let labelClasses = 'flex flex-col items-center text-slate-500';
+                    let inputAttrs = '';
+
+                    if (isChecked) {
+                        labelClasses += ' text-green-600';
+                        inputAttrs = 'checked disabled';
+                    } else if (isPast) {
+                        labelClasses += ' text-slate-300 opacity-75';
+                        inputAttrs = 'disabled';
+                    } else {
+                        labelClasses += ' cursor-pointer';
+                    }
+
                     trackerItem.innerHTML = `
-                        <input type="checkbox" id="chk-${goal.id}-${i}" class="saving-checkbox hidden" ${isChecked ? 'checked disabled' : ''}>
-                        <label for="chk-${goal.id}-${i}" class="flex flex-col items-center ${isChecked ? '' : 'cursor-pointer'} text-slate-500">
+                        <input type="checkbox" id="chk-${goal.id}-${i}" class="saving-checkbox hidden" ${inputAttrs}>
+                        <label for="chk-${goal.id}-${i}" class="${labelClasses}">
                             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                             <span class="text-xs">${periodLabel}${periods > 1 ? i : ''}</span>
                         </label>
                     `;
-                    const checkbox = trackerItem.querySelector('input');
-                    if (!isChecked) {
+                    
+                    if (!isChecked && !isPast) {
+                        const checkbox = trackerItem.querySelector('input');
                         checkbox.addEventListener('change', () => {
-                            if(checkbox.checked) {
+                            if (checkbox.checked) {
                                 goal.saved += goal.savingAmount;
                                 if (!goal.progress) goal.progress = {};
-                                if (!goal.progress[currentMonthKey]) goal.progress[currentMonthKey] = 0;
-                                goal.progress[currentMonthKey]++;
+                                if (!goal.progress[currentMonthKey]) goal.progress[currentMonthKey] = [];
+                                goal.progress[currentMonthKey].push(i);
                                 saveGoals();
                                 renderGoals();
                             }
@@ -252,7 +279,7 @@
                 const totalCashflow = parseFloat(localStorage.getItem('availableCashFlow')) || 0;
                 let allocatedSavings = 0;
                 goals.forEach(goal => {
-                    if (goal.id !== editingGoalId) { // Exclude the goal being edited
+                    if (goal.id !== editingGoalId) {
                         if(goal.frequency === 'semanal') allocatedSavings += (goal.savingAmount || 0) * 4;
                         else if (goal.frequency === 'quincenal') allocatedSavings += (goal.savingAmount || 0) * 2;
                         else allocatedSavings += (goal.savingAmount || 0);
@@ -298,13 +325,8 @@
                 deleteGoalBtn.classList.add('hidden');
 
                 remainingCashflow = calculateRemainingCashflow();
-                if(remainingCashflow > 0) {
-                    availableCashflowEl.textContent = formatCurrency(remainingCashflow);
-                    cashflowInfo.classList.remove('hidden');
-                } else {
-                    availableCashflowEl.textContent = formatCurrency(0);
-                    cashflowInfo.classList.remove('hidden');
-                }
+                availableCashflowEl.textContent = formatCurrency(remainingCashflow > 0 ? remainingCashflow : 0);
+                cashflowInfo.classList.remove('hidden');
 
                 toggleModal(true);
             });
