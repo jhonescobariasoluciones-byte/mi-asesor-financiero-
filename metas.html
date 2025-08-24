@@ -83,6 +83,7 @@
                                 </select>
                             </div>
                         </div>
+                        <div id="form-error" class="text-sm text-red-600 bg-red-100 p-2 rounded-md text-center hidden"></div>
                         <div>
                             <label for="goal-image-upload" class="block text-sm font-medium text-slate-700">Imagen Inspiradora</label>
                             <input type="file" id="goal-image-upload" class="mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" accept="image/*">
@@ -115,6 +116,7 @@
             const cashflowInfo = document.getElementById('cashflow-info');
             const availableCashflowEl = document.getElementById('available-cashflow');
             const assignCashflowBtn = document.getElementById('assign-cashflow-btn');
+            const formErrorEl = document.getElementById('form-error');
 
             const toggleModal = (show) => modal.classList.toggle('hidden', !show);
             
@@ -312,6 +314,7 @@
                     }
                     
                     deleteGoalBtn.classList.remove('hidden');
+                    formErrorEl.classList.add('hidden');
                     toggleModal(true);
                 }
             };
@@ -327,7 +330,7 @@
                 remainingCashflow = calculateRemainingCashflow();
                 availableCashflowEl.textContent = formatCurrency(remainingCashflow > 0 ? remainingCashflow : 0);
                 cashflowInfo.classList.remove('hidden');
-
+                formErrorEl.classList.add('hidden');
                 toggleModal(true);
             });
 
@@ -354,13 +357,27 @@
 
             goalForm.addEventListener('submit', (e) => {
                 e.preventDefault();
+                formErrorEl.classList.add('hidden');
                 const id = document.getElementById('goal-id').value;
+                const savingAmount = parseFormattedNumber(document.getElementById('goal-saving-amount').value);
+                const frequency = document.getElementById('goal-frequency').value;
+
+                let monthlyEquivalentSaving = savingAmount;
+                if(frequency === 'semanal') monthlyEquivalentSaving *= 4;
+                else if (frequency === 'quincenal') monthlyEquivalentSaving *= 2;
+                
+                if (monthlyEquivalentSaving > remainingCashflow + 0.01) { // Add a small tolerance for floating point issues
+                    formErrorEl.textContent = `Error: El ahorro mensual excede tu flujo de caja restante de ${formatCurrency(remainingCashflow)}.`;
+                    formErrorEl.classList.remove('hidden');
+                    return;
+                }
+
                 const goalData = {
                     name: document.getElementById('goal-name').value,
                     target: parseFormattedNumber(document.getElementById('goal-target').value),
                     saved: parseFormattedNumber(document.getElementById('goal-saved').value),
-                    savingAmount: parseFormattedNumber(document.getElementById('goal-saving-amount').value),
-                    frequency: document.getElementById('goal-frequency').value,
+                    savingAmount: savingAmount,
+                    frequency: frequency,
                     image: currentImage,
                 };
 
