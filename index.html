@@ -187,6 +187,10 @@
                                 <!-- Las recomendaciones se generarán aquí -->
                             </div>
 
+                            <div id="goals-cta-container" class="p-4 bg-indigo-100 text-center rounded-lg hidden">
+                                <!-- Contenido dinámico para el CTA de Metas -->
+                            </div>
+
                             <div id="investor-profile-container" class="p-4 bg-slate-100 rounded-lg hidden">
                                 <h4 class="font-semibold text-center text-slate-800 mb-3">¿Listo para Invertir? Define tu Perfil</h4>
                                 <p class="text-center text-xs text-slate-600 mb-3">Tu elección determinará las estrategias de inversión recomendadas.</p>
@@ -240,6 +244,7 @@
             const healthStatusEl = document.getElementById('health-status');
             const healthMessageEl = document.getElementById('health-message');
             const detailedAnalysisEl = document.getElementById('detailed-analysis');
+            const goalsCtaContainer = document.getElementById('goals-cta-container'); 
             const investorProfileContainer = document.getElementById('investor-profile-container');
             const recommendationsEl = document.getElementById('recommendations');
             const investmentRecommendationsEl = document.getElementById('investment-recommendations');
@@ -499,6 +504,7 @@
                 recommendationsEl.classList.add('hidden');
                 investmentRecommendationsEl.classList.add('hidden');
                 exportPdfBtn.classList.add('hidden');
+                goalsCtaContainer.classList.add('hidden'); 
                 state.currentDiagnosis = null;
                 state.investorProfile = null;
             }
@@ -560,11 +566,46 @@
                 generateInitialRecommendations(status, {totalIncome, ...state.currentDiagnosis});
                 recommendationsEl.classList.remove('hidden');
 
+                showGoalsCta(status);
+
                 if (status === 'Estable' || status === 'Saludable') {
                     investorProfileContainer.classList.remove('hidden');
                 } else {
                     exportPdfBtn.classList.remove('hidden');
                 }
+            }
+            
+            function showGoalsCta(status) {
+                let ctaTitle = '';
+                let ctaText = '';
+                let ctaButtonText = '';
+
+                switch (status) {
+                    case 'Crítica':
+                        ctaTitle = 'Define tu "Porqué" para Salir Adelante';
+                        ctaText = 'Incluso en momentos difíciles, tener una meta clara te dará la fuerza para seguir. Crea un pequeño objetivo que te motive a dar el primer paso.';
+                        ctaButtonText = 'Crear mi Meta de Escape →';
+                        break;
+                    case 'En Riesgo':
+                        ctaTitle = 'Dale un Propósito a tu Ahorro';
+                        ctaText = 'Estás a un paso de la estabilidad. Crear una meta convierte el ahorro de una obligación a una emocionante misión.';
+                        ctaButtonText = 'Crear mi Primera Misión →';
+                        break;
+                    default: // Estable y Saludable
+                        ctaTitle = '¡Es Momento de Soñar en Grande!';
+                        ctaText = 'Tienes un flujo de caja positivo. Es el momento perfecto para ponerle un nombre a tus sueños y empezar a construir tu futuro hoy.';
+                        ctaButtonText = 'Crear mi Primera Meta →';
+                        break;
+                }
+
+                goalsCtaContainer.innerHTML = `
+                    <h4 class="font-semibold text-indigo-800">${ctaTitle}</h4>
+                    <p class="text-sm text-indigo-700 mt-1">${ctaText}</p>
+                    <a href="metas.html" class="mt-4 inline-block bg-indigo-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-indigo-700 transition-colors">
+                        ${ctaButtonText}
+                    </a>
+                `;
+                goalsCtaContainer.classList.remove('hidden');
             }
 
             function showInvestmentPlan() {
