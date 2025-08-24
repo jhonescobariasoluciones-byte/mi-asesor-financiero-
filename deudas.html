@@ -47,7 +47,7 @@
             <div class="lg:col-span-2 space-y-6">
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <h2 class="text-xl font-semibold mb-4">Calcula tu Plan de Libertad</h2>
-                    <div id="proactive-advisor" class="p-3 bg-amber-100 text-amber-800 rounded-lg hidden mb-4">
+                     <div id="proactive-advisor" class="p-3 bg-amber-100 text-amber-800 rounded-lg hidden mb-4">
                         <p class="font-semibold">¡Oportunidad Detectada!</p>
                         <p class="text-sm">Veo que no tienes un pago extra asignado. ¿Te gustaría que volvamos al diagnosticador para encontrar juntos dinero que puedas usar para acelerar tu plan?</p>
                         <a href="index.html" class="font-bold text-sm hover:underline">Sí, vamos a encontrar dinero extra →</a>
@@ -91,7 +91,7 @@
                 </div>
 
                 <div id="payment-plan-container" class="bg-white p-6 rounded-lg shadow-md hidden">
-                    <div id="why-display" class="mb-4 p-3 bg-yellow-100 text-yellow-800 rounded-lg hidden">
+                     <div id="why-display" class="mb-4 p-3 bg-yellow-100 text-yellow-800 rounded-lg hidden">
                         <p class="font-bold text-sm">Recuerda tu "Porqué":</p>
                         <p id="why-text" class="italic"></p>
                     </div>
@@ -126,7 +126,306 @@
     </div>
 
     <script>
-        // El script completo irá aquí
+        document.addEventListener('DOMContentLoaded', () => {
+            let debts = [];
+            let snowballPlan = {};
+            let avalanchePlan = {};
+            
+            // DOM Elements
+            const debtsListEl = document.getElementById('debts-list');
+            const addDebtBtn = document.getElementById('add-debt-btn');
+            const modal = document.getElementById('debt-modal');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            const debtForm = document.getElementById('debt-form');
+            const modalTitle = document.getElementById('modal-title');
+            const deleteDebtBtn = document.getElementById('delete-debt-btn');
+            const extraPaymentInput = document.getElementById('extra-payment');
+            const calculatePlanBtn = document.getElementById('calculate-plan-btn');
+            const debtWhyInput = document.getElementById('debt-why');
+            const whyDisplayEl = document.getElementById('why-display');
+            const whyTextEl = document.getElementById('why-text');
+            const proactiveAdvisorEl = document.getElementById('proactive-advisor');
+            
+            const strategyComparisonEl = document.getElementById('strategy-comparison');
+            const snowballCard = document.getElementById('snowball-card');
+            const avalancheCard = document.getElementById('avalanche-card');
+            const snowballBadge = document.getElementById('snowball-badge');
+            const avalancheBadge = document.getElementById('avalanche-badge');
+            const recommendationTextEl = document.getElementById('recommendation-text');
+            
+            const extraPaymentBoosterEl = document.getElementById('extra-payment-booster');
+            const oneTimePaymentInput = document.getElementById('one-time-payment');
+            const applyExtraPaymentBtn = document.getElementById('apply-extra-payment-btn');
+            const boosterFeedbackEl = document.getElementById('booster-feedback');
+
+            const paymentPlanContainer = document.getElementById('payment-plan-container');
+            const planStrategyNameEl = document.getElementById('plan-strategy-name');
+            const paymentPlanEl = document.getElementById('payment-plan');
+
+            // --- UTILITY FUNCTIONS ---
+            const parseFormattedNumber = (value) => parseFloat(String(value).replace(/\./g, '')) || 0;
+            const formatInputAsNumber = (e) => {
+                const input = e.target;
+                const rawValue = input.value.replace(/[^\d]/g, '');
+                input.value = rawValue ? new Intl.NumberFormat('es-CO').format(rawValue) : '';
+            };
+            const formatCurrency = (amount) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(amount);
+
+            // --- DATA PERSISTENCE ---
+            const saveDebts = () => {
+                const data = { debts, why: debtWhyInput.value, extraPayment: extraPaymentInput.value };
+                localStorage.setItem('financialDebts', JSON.stringify(data));
+            };
+            const loadDebts = () => {
+                const saved = localStorage.getItem('financialDebts');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    debts = data.debts || [];
+                    debtWhyInput.value = data.why || '';
+                    extraPaymentInput.value = data.extraPayment || '';
+                    renderDebtsList();
+                }
+            };
+
+            // --- UI FUNCTIONS ---
+            const toggleModal = (show) => modal.classList.toggle('hidden', !show);
+
+            const renderDebtsList = () => {
+                debtsListEl.innerHTML = '';
+                if (debts.length === 0) {
+                    debtsListEl.innerHTML = '<p class="text-center text-sm text-slate-500">No has añadido deudas.</p>';
+                    return;
+                }
+                debts.forEach(debt => {
+                    const debtEl = document.createElement('div');
+                    debtEl.className = 'p-2 border rounded-md cursor-pointer hover:bg-slate-50';
+                    debtEl.dataset.id = debt.id;
+                    debtEl.innerHTML = `<p class="font-semibold">${debt.name}</p><p class="text-sm text-slate-600">${formatCurrency(debt.balance)} @ ${debt.rate}%</p>`;
+                    debtEl.addEventListener('click', () => editDebt(debt.id));
+                    debtsListEl.appendChild(debtEl);
+                });
+            };
+
+            const editDebt = (id) => {
+                const debt = debts.find(d => d.id === id);
+                if (debt) {
+                    modalTitle.textContent = 'Editar Deuda';
+                    document.getElementById('debt-id').value = debt.id;
+                    document.getElementById('debt-name').value = debt.name;
+                    document.getElementById('debt-balance').value = new Intl.NumberFormat('es-CO').format(debt.balance);
+                    document.getElementById('debt-rate').value = debt.rate;
+                    document.getElementById('debt-min-payment').value = new Intl.NumberFormat('es-CO').format(debt.minPayment);
+                    deleteDebtBtn.classList.remove('hidden');
+                    toggleModal(true);
+                }
+            };
+            
+            const renderPaymentPlan = (plan) => {
+                planStrategyNameEl.textContent = plan.strategyName;
+                 paymentPlanEl.innerHTML = plan.history.map(month => `
+                    <div class="mb-2 p-2 border-b">
+                        <p class="font-bold">Mes ${month.month}</p>
+                        ${month.payments.map(p => `<p class="text-sm ml-2">${p.name}: ${formatCurrency(p.amount)}</p>`).join('')}
+                    </div>
+                `).join('');
+                paymentPlanContainer.classList.remove('hidden');
+            };
+
+            // --- CALCULATION LOGIC ---
+            const runSimulation = (strategy, currentDebts) => {
+                let tempDebts = JSON.parse(JSON.stringify(currentDebts));
+                const extraPayment = parseFormattedNumber(extraPaymentInput.value);
+                
+                if (strategy === 'snowball') {
+                    tempDebts.sort((a, b) => a.balance - b.balance);
+                } else { // avalanche
+                    tempDebts.sort((a, b) => b.rate - a.rate);
+                }
+
+                let months = 0;
+                let totalInterest = 0;
+                let paymentHistory = [];
+                let snowball = extraPayment;
+
+                while (tempDebts.some(d => d.balance > 0)) {
+                    months++;
+                    let monthSummary = { month: months, payments: [] };
+                    
+                    tempDebts.forEach(debt => {
+                        if (debt.balance > 0) {
+                            const monthlyInterest = (debt.balance * (debt.rate / 100)) / 12;
+                            debt.balance += monthlyInterest;
+                            totalInterest += monthlyInterest;
+                        }
+                    });
+
+                    let snowballForMonth = snowball;
+                    for (const debt of tempDebts) {
+                        if(debt.balance <= 0) continue;
+                        let payment = debt.minPayment;
+                        const targetDebt = tempDebts.find(d => d.balance > 0);
+                        if(targetDebt && debt.id === targetDebt.id) {
+                            payment += snowballForMonth;
+                        }
+                        
+                        const paidAmount = Math.min(debt.balance, payment);
+                        debt.balance -= paidAmount;
+                        monthSummary.payments.push({ name: debt.name, amount: paidAmount });
+
+                        if (debt.balance <= 0) {
+                            snowball += debt.minPayment;
+                        }
+                    }
+                    paymentHistory.push(monthSummary);
+                    if (months > 600) break;
+                }
+                
+                const endDate = new Date();
+                endDate.setMonth(endDate.getMonth() + months);
+                const dateString = `${endDate.toLocaleString('es-ES', { month: 'long', year: 'numeric' })} (${months} meses)`;
+
+                return { months, totalInterest, history: paymentHistory, dateString, strategyName: strategy === 'snowball' ? 'Bola de Nieve' : 'Avalancha' };
+            };
+
+            // --- EVENT LISTENERS ---
+            addDebtBtn.addEventListener('click', () => {
+                modalTitle.textContent = 'Añadir Nueva Deuda';
+                debtForm.reset();
+                document.getElementById('debt-id').value = '';
+                deleteDebtBtn.classList.add('hidden');
+                toggleModal(true);
+            });
+
+            closeModalBtn.addEventListener('click', () => toggleModal(false));
+
+            debtForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const id = document.getElementById('debt-id').value;
+                const debtData = {
+                    name: document.getElementById('debt-name').value,
+                    balance: parseFormattedNumber(document.getElementById('debt-balance').value),
+                    rate: parseFloat(document.getElementById('debt-rate').value),
+                    minPayment: parseFormattedNumber(document.getElementById('debt-min-payment').value)
+                };
+
+                if (id) {
+                    const index = debts.findIndex(d => d.id == id);
+                    debts[index] = { ...debts[index], ...debtData };
+                } else {
+                    debts.push({ id: Date.now(), ...debtData });
+                }
+                
+                saveDebts();
+                renderDebtsList();
+                toggleModal(false);
+            });
+
+            deleteDebtBtn.addEventListener('click', () => {
+                const id = document.getElementById('debt-id').value;
+                debts = debts.filter(d => d.id != id);
+                saveDebts();
+                renderDebtsList();
+                toggleModal(false);
+            });
+            
+            calculatePlanBtn.addEventListener('click', () => {
+                if (debts.length === 0) {
+                    alert('Por favor, añade al menos una deuda para calcular tu plan.');
+                    return;
+                }
+                
+                const extraPayment = parseFormattedNumber(extraPaymentInput.value);
+                if (extraPayment === 0) {
+                    proactiveAdvisorEl.classList.remove('hidden');
+                } else {
+                    proactiveAdvisorEl.classList.add('hidden');
+                }
+
+                snowballPlan = runSimulation('snowball', debts);
+                avalanchePlan = runSimulation('avalanche', debts);
+
+                // Update UI
+                document.getElementById('snowball-date').textContent = snowballPlan.dateString;
+                document.getElementById('snowball-interest').textContent = formatCurrency(snowballPlan.totalInterest);
+                document.getElementById('avalanche-date').textContent = avalanchePlan.dateString;
+                document.getElementById('avalanche-interest').textContent = formatCurrency(avalanchePlan.totalInterest);
+                document.getElementById('interest-saved').textContent = formatCurrency(snowballPlan.totalInterest - avalanchePlan.totalInterest);
+                
+                // Recommendation Logic
+                const smallestDebt = [...debts].sort((a,b) => a.balance - b.balance)[0];
+                const monthsToPaySmallest = smallestDebt.balance / (smallestDebt.minPayment + extraPayment);
+
+                let recommendation = '';
+                snowballBadge.classList.add('hidden');
+                avalancheBadge.classList.add('hidden');
+                snowballCard.classList.remove('recommended');
+                avalancheCard.classList.remove('recommended');
+
+                if (monthsToPaySmallest <= 3 && monthsToPaySmallest > 0) {
+                    recommendation = 'Recomendamos <strong>Bola de Nieve</strong>. Pagar tu deuda más pequeña rápidamente te dará una gran victoria motivacional para seguir adelante.';
+                    snowballBadge.classList.remove('hidden');
+                    snowballCard.classList.add('recommended');
+                    renderPaymentPlan(snowballPlan);
+                } else {
+                    recommendation = 'Recomendamos <strong>Avalancha</strong>. Es la estrategia matemáticamente superior y te ahorrará la mayor cantidad de dinero en intereses.';
+                    avalancheBadge.classList.remove('hidden');
+                    avalancheCard.classList.add('recommended');
+                    renderPaymentPlan(avalanchePlan);
+                }
+                recommendationTextEl.innerHTML = recommendation;
+                recommendationTextEl.classList.remove('hidden');
+                strategyComparisonEl.classList.remove('hidden');
+                extraPaymentBoosterEl.classList.remove('hidden');
+                
+                if (debtWhyInput.value.trim()) {
+                    whyTextEl.textContent = debtWhyInput.value;
+                    whyDisplayEl.classList.remove('hidden');
+                } else {
+                    whyDisplayEl.classList.add('hidden');
+                }
+            });
+            
+            snowballCard.addEventListener('click', () => renderPaymentPlan(snowballPlan));
+            avalancheCard.addEventListener('click', () => renderPaymentPlan(avalanchePlan));
+            
+            applyExtraPaymentBtn.addEventListener('click', () => {
+                const oneTimePayment = parseFormattedNumber(oneTimePaymentInput.value);
+                if (oneTimePayment <= 0) return;
+
+                const originalMonths = snowballPlan.months;
+                let tempDebts = JSON.parse(JSON.stringify(debts));
+                
+                // Apply payment to the first debt in the snowball order
+                tempDebts.sort((a,b) => a.balance - b.balance);
+                const targetDebt = tempDebts.find(d => d.balance > 0);
+                if(targetDebt) {
+                    targetDebt.balance -= oneTimePayment;
+                }
+
+                const newPlan = runSimulation('snowball', tempDebts);
+                const monthsSaved = originalMonths - newPlan.months;
+                
+                boosterFeedbackEl.textContent = `¡Felicidades! Acabas de acortar tu camino a la libertad en ${monthsSaved} mes(es).`;
+                setTimeout(() => boosterFeedbackEl.textContent = '', 4000);
+                
+                // Update main debts array, save and re-render everything
+                const originalDebt = debts.find(d => d.id === targetDebt.id);
+                originalDebt.balance -= oneTimePayment;
+                saveDebts();
+                renderDebtsList();
+                calculatePlanBtn.click();
+                oneTimePaymentInput.value = '';
+            });
+
+            ['debt-balance', 'debt-min-payment', 'extra-payment', 'one-time-payment'].forEach(id => {
+                document.getElementById(id).addEventListener('input', formatInputAsNumber);
+            });
+            
+            debtWhyInput.addEventListener('change', saveDebts);
+
+            // --- INITIALIZATION ---
+            loadDebts();
+        });
     </script>
 </body>
 </html>
