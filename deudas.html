@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conquista tus Deudas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://css.gg/css?=|add" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        #debt-modal > div, #info-modal > div { max-height: 90vh; overflow-y: auto; }
+        .strategy-card { border: 2px solid transparent; transition: all 0.2s ease-in-out; }
+        .recommended { border-color: #16a34a; box-shadow: 0 0 15px rgba(22, 163, 74, 0.2); transform: scale(1.02); }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-slate-900">Centro de Comando de Deudas</h1>
+            <p class="text-slate-600 mt-2">Visualiza a tu enemigo, elige tu estrategia y conquista tu libertad financiera.</p>
+            <a href="index.html" class="text-indigo-600 font-semibold mt-4 inline-block hover:underline">← Volver al Diagnóstico</a>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Columna de Entradas -->
+            <div class="lg:col-span-1 space-y-6">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-2">Tu "Porqué"</h2>
+                    <p class="text-xs text-slate-500 mb-2">¿Cuál es tu motivación más grande para salir de deudas?</p>
+                    <textarea id="debt-why" class="w-full p-2 border border-slate-300 rounded-md" placeholder="Ej: Para darle tranquilidad a mi familia..."></textarea>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-4">Mis Deudas</h2>
+                    <div id="debts-list" class="space-y-3"></div>
+                    <button id="add-debt-btn" class="mt-4 w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700 transition-colors">Añadir Deuda</button>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-2">Pago Extra Mensual</h2>
+                    <p class="text-xs text-slate-500 mb-2">Este es el dinero "extra" que puedes usar para acelerar el pago.</p>
+                    <input type="text" id="extra-payment" placeholder="0" class="w-full p-2 border border-slate-300 rounded-md">
+                </div>
+            </div>
+
+            <!-- Columna de Estrategia y Plan -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-4">Calcula tu Plan de Libertad</h2>
+                    <div id="proactive-advisor" class="p-3 bg-amber-100 text-amber-800 rounded-lg hidden mb-4">
+                        <p class="font-semibold">¡Oportunidad Detectada!</p>
+                        <p class="text-sm">Veo que no tienes un pago extra asignado. ¿Te gustaría que volvamos al diagnosticador para encontrar juntos dinero que puedas usar para acelerar tu plan?</p>
+                        <a href="index.html" class="font-bold text-sm hover:underline">Sí, vamos a encontrar dinero extra →</a>
+                    </div>
+                    <button id="calculate-plan-btn" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700">Calcular mi Plan de Libertad</button>
+                    
+                    <div id="strategy-comparison" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
+                        <!-- Card Bola de Nieve -->
+                        <div id="snowball-card" class="strategy-card border rounded-lg p-4 cursor-pointer">
+                            <div class="flex justify-between items-center">
+                                <h3 class="font-bold text-lg text-sky-700">❄️ Bola de Nieve</h3>
+                                <span id="snowball-badge" class="text-xs font-bold text-white bg-green-600 px-2 py-1 rounded-full hidden">Recomendado</span>
+                            </div>
+                            <p class="text-xs text-slate-500 mb-2">Enfoque en la motivación.</p>
+                            <p><strong>Libre de deudas en:</strong> <span id="snowball-date" class="font-semibold"></span></p>
+                            <p><strong>Total de intereses:</strong> <span id="snowball-interest" class="font-semibold"></span></p>
+                        </div>
+                        <!-- Card Avalancha -->
+                        <div id="avalanche-card" class="strategy-card border rounded-lg p-4 cursor-pointer">
+                             <div class="flex justify-between items-center">
+                                <h3 class="font-bold text-lg text-red-700">🏔️ Avalancha</h3>
+                                <span id="avalanche-badge" class="text-xs font-bold text-white bg-green-600 px-2 py-1 rounded-full hidden">Recomendado</span>
+                            </div>
+                             <p class="text-xs text-slate-500 mb-2">Enfoque en el ahorro.</p>
+                             <p><strong>Libre de deudas en:</strong> <span id="avalanche-date" class="font-semibold"></span></p>
+                             <p><strong>Total de intereses:</strong> <span id="avalanche-interest" class="font-semibold"></span></p>
+                             <p class="text-sm font-bold text-green-600 mt-2">¡Ahorrarás <span id="interest-saved"></span>!</p>
+                        </div>
+                    </div>
+                     <div id="recommendation-text" class="mt-4 text-center p-3 bg-green-100 text-green-800 rounded-lg hidden"></div>
+                </div>
+                
+                <div id="extra-payment-booster" class="bg-white p-6 rounded-lg shadow-md hidden">
+                    <h2 class="text-xl font-semibold mb-2 text-center">🚀 ¡El Botón de la Victoria! 🚀</h2>
+                    <p class="text-sm text-slate-600 mb-4 text-center">¿Hiciste un pago extra este mes? ¡Regístralo aquí y mira cómo se acelera tu libertad!</p>
+                    <div class="flex items-center gap-4">
+                        <input type="text" id="one-time-payment" placeholder="Monto del abono" class="flex-1 p-2 border border-slate-300 rounded-md">
+                        <button id="apply-extra-payment-btn" class="bg-orange-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-orange-600">¡Aboné Extra!</button>
+                    </div>
+                    <p id="booster-feedback" class="text-center text-green-600 font-semibold mt-2"></p>
+                </div>
+
+                <div id="payment-plan-container" class="bg-white p-6 rounded-lg shadow-md hidden">
+                    <div id="why-display" class="mb-4 p-3 bg-yellow-100 text-yellow-800 rounded-lg hidden">
+                        <p class="font-bold text-sm">Recuerda tu "Porqué":</p>
+                        <p id="why-text" class="italic"></p>
+                    </div>
+                    <h2 class="text-xl font-semibold mb-4">Plan de Pagos Detallado (<span id="plan-strategy-name"></span>)</h2>
+                    <div id="payment-plan" class="max-h-96 overflow-y-auto"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para añadir/editar deuda -->
+        <div id="debt-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
+            <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 id="modal-title" class="text-2xl font-bold">Añadir Nueva Deuda</h2>
+                    <button id="close-modal-btn" class="text-3xl leading-none text-slate-400 hover:text-slate-800">&times;</button>
+                </div>
+                <form id="debt-form">
+                    <input type="hidden" id="debt-id">
+                    <div class="space-y-4">
+                        <input type="text" id="debt-name" placeholder="Ej: Tarjeta de Crédito Banco X" class="w-full p-2 border rounded" required>
+                        <input type="text" inputmode="decimal" id="debt-balance" placeholder="Saldo Total (Ej: 2.500.000)" class="w-full p-2 border rounded" required>
+                        <input type="number" step="0.01" id="debt-rate" placeholder="Tasa de Interés Anual (%)" class="w-full p-2 border rounded" required>
+                        <input type="text" inputmode="decimal" id="debt-min-payment" placeholder="Pago Mínimo Mensual" class="w-full p-2 border rounded" required>
+                    </div>
+                    <div class="mt-6 flex justify-end gap-4">
+                        <button type="button" id="delete-debt-btn" class="bg-red-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-red-700 hidden">Eliminar</button>
+                        <button type="submit" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700">Guardar Deuda</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // El script completo irá aquí
+    </script>
+</body>
+</html>
