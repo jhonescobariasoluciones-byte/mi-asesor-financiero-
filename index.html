@@ -566,7 +566,7 @@
                 generateInitialRecommendations(status, {totalIncome, ...state.currentDiagnosis});
                 recommendationsEl.classList.remove('hidden');
 
-                showGoalsCta(status);
+                showGoalsCta(status, cashFlow);
 
                 if (status === 'Estable' || status === 'Saludable') {
                     investorProfileContainer.classList.remove('hidden');
@@ -575,7 +575,7 @@
                 }
             }
             
-            function showGoalsCta(status) {
+            function showGoalsCta(status, cashFlow) {
                 let ctaTitle = '';
                 let ctaText = '';
                 let ctaButtonText = '';
@@ -601,11 +601,19 @@
                 goalsCtaContainer.innerHTML = `
                     <h4 class="font-semibold text-indigo-800">${ctaTitle}</h4>
                     <p class="text-sm text-indigo-700 mt-1">${ctaText}</p>
-                    <a href="metas.html" class="mt-4 inline-block bg-indigo-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-indigo-700 transition-colors">
+                    <a href="metas.html" id="go-to-goals-btn" class="mt-4 inline-block bg-indigo-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-indigo-700 transition-colors">
                         ${ctaButtonText}
                     </a>
                 `;
                 goalsCtaContainer.classList.remove('hidden');
+                
+                document.getElementById('go-to-goals-btn').addEventListener('click', () => {
+                    if (cashFlow > 0) {
+                        localStorage.setItem('availableCashFlow', cashFlow);
+                    } else {
+                        localStorage.removeItem('availableCashFlow');
+                    }
+                });
             }
 
             function showInvestmentPlan() {
