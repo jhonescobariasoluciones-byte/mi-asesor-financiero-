@@ -17,7 +17,7 @@
 
     <div class="container mx-auto p-4 md:p-8 max-w-7xl">
         <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-slate-900">Tu Tablero de Sueños</h1>
+            <h1 class="text-3xl md:text-4xl font-bold text-slate-900">Tu Tablero de Sueños y Metas</h1>
             <p class="text-slate-600 mt-2">Convierte tus metas en un plan. Cada peso que asignas es un paso hacia tu futuro.</p>
             <a href="index.html" class="text-indigo-600 font-semibold mt-4 inline-block hover:underline">← Volver al Diagnóstico</a>
         </header>
@@ -51,11 +51,20 @@
                         </div>
                         <div>
                             <label for="goal-target" class="block text-sm font-medium text-slate-700">Monto Objetivo</label>
-                            <input type="number" id="goal-target" placeholder="5000000" class="mt-1 block w-full p-2 border border-slate-300 rounded-md" required>
+                            <input type="text" inputmode="decimal" id="goal-target" placeholder="5.000.000" class="mt-1 block w-full p-2 border border-slate-300 rounded-md" required>
                         </div>
                         <div>
                             <label for="goal-saved" class="block text-sm font-medium text-slate-700">Ahorro Actual</label>
-                            <input type="number" id="goal-saved" placeholder="0" class="mt-1 block w-full p-2 border border-slate-300 rounded-md" required>
+                            <input type="text" inputmode="decimal" id="goal-saved" placeholder="0" class="mt-1 block w-full p-2 border border-slate-300 rounded-md" required>
+                        </div>
+                        <div class="p-3 bg-indigo-50 rounded-md">
+                            <label for="goal-monthly-saving" class="block text-sm font-medium text-indigo-800">Ahorro Mensual Programado</label>
+                            <p class="text-xs text-indigo-600 mb-2">¿Cuánto destinarás a esta meta cada mes?</p>
+                            <div id="cashflow-info" class="text-sm mb-2 hidden">
+                                Flujo de caja disponible: <strong id="available-cashflow"></strong> 
+                                <button type="button" id="assign-cashflow-btn" class="ml-2 text-xs text-indigo-600 font-semibold hover:underline">Asignar</button>
+                            </div>
+                            <input type="text" inputmode="decimal" id="goal-monthly-saving" placeholder="300.000" class="block w-full p-2 border border-slate-300 rounded-md" required>
                         </div>
                         <div>
                             <label for="goal-image-upload" class="block text-sm font-medium text-slate-700">Imagen Inspiradora</label>
@@ -85,8 +94,19 @@
             const deleteGoalBtn = document.getElementById('delete-goal-btn');
             const imageUploadInput = document.getElementById('goal-image-upload');
             const imagePreview = document.getElementById('image-preview');
+            const cashflowInfo = document.getElementById('cashflow-info');
+            const availableCashflowEl = document.getElementById('available-cashflow');
+            const assignCashflowBtn = document.getElementById('assign-cashflow-btn');
 
             const toggleModal = (show) => modal.classList.toggle('hidden', !show);
+            
+            const parseFormattedNumber = (value) => parseFloat(String(value).replace(/\./g, '')) || 0;
+
+            const formatInputAsNumber = (e) => {
+                const input = e.target;
+                const rawValue = input.value.replace(/[^\d]/g, '');
+                input.value = rawValue ? new Intl.NumberFormat('es-CO').format(rawValue) : '';
+            };
 
             const renderGoals = () => {
                 goalsContainer.innerHTML = '';
@@ -95,6 +115,20 @@
                 }
                 goals.forEach(goal => {
                     const percentage = goal.target > 0 ? (goal.saved / goal.target * 100) : 0;
+                    const remaining = goal.target - goal.saved;
+                    let timeText = 'Define un ahorro mensual';
+                    if (goal.monthlySaving > 0 && remaining > 0) {
+                        const months = Math.ceil(remaining / goal.monthlySaving);
+                        const years = Math.floor(months / 12);
+                        const remainingMonths = months % 12;
+                        timeText = `Lo lograrás en aprox. `;
+                        if(years > 0) timeText += `${years} año${years > 1 ? 's' : ''}`;
+                        if(years > 0 && remainingMonths > 0) timeText += ` y `;
+                        if(remainingMonths > 0) timeText += `${remainingMonths} mes${remainingMonths > 1 ? 'es' : ''}`;
+                    } else if (remaining <= 0) {
+                        timeText = '¡Meta Cumplida! 🎉';
+                    }
+
                     const card = document.createElement('div');
                     card.className = 'goal-card bg-white rounded-lg shadow-md p-6 cursor-pointer flex flex-col';
                     card.dataset.id = goal.id;
@@ -107,10 +141,12 @@
                         <div class="text-sm text-slate-600 mb-4">
                             <p><strong>Meta:</strong> ${formatCurrency(goal.target)}</p>
                             <p><strong>Ahorrado:</strong> ${formatCurrency(goal.saved)}</p>
+                            <p><strong>Ahorro Mensual:</strong> ${formatCurrency(goal.monthlySaving || 0)}</p>
                         </div>
-                        <div class="w-full bg-slate-200 rounded-full h-4 mt-auto">
+                        <div class="w-full bg-slate-200 rounded-full h-4">
                             <div class="bg-green-500 h-4 rounded-full text-center text-white text-xs font-semibold" style="width: ${percentage > 100 ? 100 : percentage}%">${percentage.toFixed(0)}%</div>
                         </div>
+                        <p class="text-center text-xs text-indigo-600 font-semibold mt-2">${timeText}</p>
                     `;
                     card.addEventListener('click', () => editGoal(goal.id));
                     goalsContainer.appendChild(card);
@@ -145,10 +181,11 @@
                     modalTitle.textContent = 'Editar Meta';
                     document.getElementById('goal-id').value = goal.id;
                     document.getElementById('goal-name').value = goal.name;
-                    document.getElementById('goal-target').value = goal.target;
-                    document.getElementById('goal-saved').value = goal.saved;
+                    document.getElementById('goal-target').value = new Intl.NumberFormat('es-CO').format(goal.target);
+                    document.getElementById('goal-saved').value = new Intl.NumberFormat('es-CO').format(goal.saved);
+                    document.getElementById('goal-monthly-saving').value = new Intl.NumberFormat('es-CO').format(goal.monthlySaving || 0);
                     
-                    currentImage = goal.image; // Store current image
+                    currentImage = goal.image;
                     if(currentImage) {
                         imagePreview.src = currentImage;
                         imagePreview.classList.remove('hidden');
@@ -168,6 +205,15 @@
                 currentImage = null;
                 document.getElementById('goal-id').value = '';
                 deleteGoalBtn.classList.add('hidden');
+
+                const availableCashFlow = parseFloat(localStorage.getItem('availableCashFlow')) || 0;
+                if(availableCashFlow > 0) {
+                    availableCashflowEl.textContent = formatCurrency(availableCashFlow);
+                    cashflowInfo.classList.remove('hidden');
+                } else {
+                    cashflowInfo.classList.add('hidden');
+                }
+
                 toggleModal(true);
             });
 
@@ -186,14 +232,21 @@
                 }
             });
 
+            assignCashflowBtn.addEventListener('click', () => {
+                const availableCashFlow = parseFloat(localStorage.getItem('availableCashFlow')) || 0;
+                const monthlySavingInput = document.getElementById('goal-monthly-saving');
+                monthlySavingInput.value = new Intl.NumberFormat('es-CO').format(availableCashFlow);
+            });
+
             goalForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 const id = document.getElementById('goal-id').value;
                 const goalData = {
                     name: document.getElementById('goal-name').value,
-                    target: parseFloat(document.getElementById('goal-target').value),
-                    saved: parseFloat(document.getElementById('goal-saved').value),
-                    image: currentImage, // Use the stored image data URL
+                    target: parseFormattedNumber(document.getElementById('goal-target').value),
+                    saved: parseFormattedNumber(document.getElementById('goal-saved').value),
+                    monthlySaving: parseFormattedNumber(document.getElementById('goal-monthly-saving').value),
+                    image: currentImage,
                 };
 
                 if (id) {
@@ -214,6 +267,10 @@
                 saveGoals();
                 renderGoals();
                 toggleModal(false);
+            });
+            
+            ['goal-target', 'goal-saved', 'goal-monthly-saving'].forEach(id => {
+                document.getElementById(id).addEventListener('input', formatInputAsNumber);
             });
 
             loadGoals();
