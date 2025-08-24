@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Presupuesto Mensual</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-slate-900">Tu Plan de Juego Mensual</h1>
+            <p class="text-slate-600 mt-2">Asigna un trabajo a cada peso. Un presupuesto no es una restricción, es un plan para tu libertad.</p>
+            <a href="index.html" class="text-indigo-600 font-semibold mt-4 inline-block hover:underline">← Volver al Diagnóstico</a>
+        </header>
+
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <!-- Resumen del Presupuesto -->
+            <div class="grid grid-cols-3 gap-4 text-center mb-6 p-4 bg-slate-100 rounded-lg">
+                <div>
+                    <p class="text-sm text-slate-600">Ingreso Total</p>
+                    <p id="summary-income" class="text-xl font-bold text-green-600">0</p>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-600">Total Presupuestado</p>
+                    <p id="summary-budgeted" class="text-xl font-bold text-red-600">0</p>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-600">Sobrante / Faltante</p>
+                    <p id="summary-remaining" class="text-xl font-bold">0</p>
+                </div>
+            </div>
+
+            <div class="flex justify-center mb-6">
+                <button id="suggest-budget-btn" class="bg-yellow-500 text-yellow-900 font-semibold py-2 px-4 rounded-lg hover:bg-yellow-600 transition-colors">Sugerir Presupuesto (Basado en el mes anterior)</button>
+            </div>
+
+            <!-- Categorías del Presupuesto -->
+            <div id="budget-categories" class="space-y-4">
+                <!-- Las categorías se insertarán aquí dinámicamente -->
+            </div>
+
+            <div class="mt-8 text-center">
+                <button id="save-budget-btn" class="w-full md:w-auto bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-indigo-700 transition-colors">Guardar mi Presupuesto</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const categories = ['Arriendo / Hipoteca', 'Servicios (Agua, Luz, Gas)', 'Internet / Celular', 'Suscripciones', 'Alimentación', 'Transporte', 'Ocio y Entretenimiento', 'Educación', 'Salud', 'Ropa', 'Otros'];
+            const summaryIncomeEl = document.getElementById('summary-income');
+            const summaryBudgetedEl = document.getElementById('summary-budgeted');
+            const summaryRemainingEl = document.getElementById('summary-remaining');
+            const budgetCategoriesEl = document.getElementById('budget-categories');
+            const suggestBudgetBtn = document.getElementById('suggest-budget-btn');
+            const saveBudgetBtn = document.getElementById('save-budget-btn');
+
+            let totalIncome = 0;
+            let currency = 'COP';
+
+            const parseFormattedNumber = (value) => parseFloat(String(value).replace(/\./g, '')) || 0;
+
+            const formatInputAsNumber = (e) => {
+                const input = e.target;
+                const rawValue = input.value.replace(/[^\d]/g, '');
+                input.value = rawValue ? new Intl.NumberFormat('es-CO').format(rawValue) : '';
+                updateSummary();
+            };
+
+            const formatCurrency = (amount) => {
+                const options = { style: 'currency', currency: currency, minimumFractionDigits: 0, maximumFractionDigits: 0 };
+                if (currency === 'USD') options.minimumFractionDigits = 2;
+                return new Intl.NumberFormat('es-CO', options).format(amount);
+            };
+
+            const updateSummary = () => {
+                let totalBudgeted = 0;
+                document.querySelectorAll('.budget-input').forEach(input => {
+                    totalBudgeted += parseFormattedNumber(input.value);
+                });
+                
+                const remaining = totalIncome - totalBudgeted;
+
+                summaryBudgetedEl.textContent = formatCurrency(totalBudgeted);
+                summaryRemainingEl.textContent = formatCurrency(remaining);
+                summaryRemainingEl.classList.toggle('text-green-600', remaining >= 0);
+                summaryRemainingEl.classList.toggle('text-red-600', remaining < 0);
+            };
+
+            const createCategoryInput = (category, amount = 0) => {
+                const div = document.createElement('div');
+                div.className = 'grid grid-cols-2 items-center gap-4 p-2 border-b';
+                div.innerHTML = `
+                    <label for="budget-${category.replace(/\s|\//g, '-')}" class="font-medium">${category}</label>
+                    <input type="text" id="budget-${category.replace(/\s|\//g, '-')}" data-category="${category}" value="${new Intl.NumberFormat('es-CO').format(amount)}" class="budget-input text-right p-2 border rounded-md">
+                `;
+                div.querySelector('input').addEventListener('input', formatInputAsNumber);
+                budgetCategoriesEl.appendChild(div);
+            };
+
+            const loadData = () => {
+                const diagnosticData = JSON.parse(localStorage.getItem('financieroData')) || {};
+                const savedBudget = JSON.parse(localStorage.getItem('financialBudget')) || {};
+
+                currency = diagnosticData.currency || 'COP';
+                
+                if (diagnosticData.incomes) {
+                    totalIncome = diagnosticData.incomes.reduce((sum, income) => sum + parseFormattedNumber(income), 0);
+                }
+                summaryIncomeEl.textContent = formatCurrency(totalIncome);
+
+                categories.forEach(cat => {
+                    const budgetAmount = savedBudget[cat] || 0;
+                    createCategoryInput(cat, budgetAmount);
+                });
+
+                updateSummary();
+            };
+
+            suggestBudgetBtn.addEventListener('click', () => {
+                const diagnosticData = JSON.parse(localStorage.getItem('financieroData')) || {};
+                if (!diagnosticData.incomes) {
+                    alert('Primero debes registrar tus ingresos y gastos en el diagnosticador.');
+                    return;
+                }
+
+                // Calculate past expenses
+                const pastExpenses = {};
+                (diagnosticData.fixedExpenses || []).forEach((amount, index) => {
+                    pastExpenses[categories[index]] = parseFormattedNumber(amount);
+                });
+                (diagnosticData.variableExpenses || []).forEach(expense => {
+                    pastExpenses[expense.category] = (pastExpenses[expense.category] || 0) + expense.amount;
+                });
+
+                // Populate inputs
+                document.querySelectorAll('.budget-input').forEach(input => {
+                    const category = input.dataset.category;
+                    const suggestedAmount = pastExpenses[category] || 0;
+                    input.value = new Intl.NumberFormat('es-CO').format(suggestedAmount);
+                });
+                updateSummary();
+            });
+
+            saveBudgetBtn.addEventListener('click', () => {
+                const budgetToSave = {};
+                document.querySelectorAll('.budget-input').forEach(input => {
+                    budgetToSave[input.dataset.category] = parseFormattedNumber(input.value);
+                });
+                localStorage.setItem('financialBudget', JSON.stringify(budgetToSave));
+                alert('¡Tu presupuesto ha sido guardado con éxito!');
+            });
+
+            loadData();
+        });
+    </script>
+</body>
+</html>
