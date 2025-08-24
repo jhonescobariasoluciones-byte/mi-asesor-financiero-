@@ -67,8 +67,8 @@
                         <div class="p-3 bg-indigo-50 rounded-md grid grid-cols-2 gap-4">
                             <div>
                                 <label for="goal-saving-amount" class="block text-sm font-medium text-indigo-800">Monto de Ahorro</label>
-                                <div id="cashflow-info" class="text-xs text-indigo-600 mb-1 hidden">
-                                    Disponible: <strong id="available-cashflow"></strong> 
+                                <div id="cashflow-info" class="text-xs text-indigo-600 mb-1">
+                                    Restante disponible: <strong id="available-cashflow"></strong> 
                                     <button type="button" id="assign-cashflow-btn" class="ml-1 font-semibold hover:underline">Asignar</button>
                                 </div>
                                 <input type="text" inputmode="decimal" id="goal-saving-amount" placeholder="300.000" class="block w-full p-2 border border-slate-300 rounded-md" required>
@@ -102,6 +102,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             let goals = [];
             let currentImage = null;
+            let remainingCashflow = 0;
             const goalsContainer = document.getElementById('goals-container');
             const addGoalBtn = document.getElementById('add-goal-btn');
             const modal = document.getElementById('goal-modal');
@@ -247,6 +248,19 @@
                 return new Intl.NumberFormat('es-CO', options).format(amount);
             };
 
+            const calculateRemainingCashflow = (editingGoalId = null) => {
+                const totalCashflow = parseFloat(localStorage.getItem('availableCashFlow')) || 0;
+                let allocatedSavings = 0;
+                goals.forEach(goal => {
+                    if (goal.id !== editingGoalId) { // Exclude the goal being edited
+                        if(goal.frequency === 'semanal') allocatedSavings += (goal.savingAmount || 0) * 4;
+                        else if (goal.frequency === 'quincenal') allocatedSavings += (goal.savingAmount || 0) * 2;
+                        else allocatedSavings += (goal.savingAmount || 0);
+                    }
+                });
+                return totalCashflow - allocatedSavings;
+            };
+
             const editGoal = (id) => {
                 const goal = goals.find(g => g.id === id);
                 if (goal) {
@@ -258,6 +272,10 @@
                     document.getElementById('goal-saving-amount').value = new Intl.NumberFormat('es-CO').format(goal.savingAmount || 0);
                     document.getElementById('goal-frequency').value = goal.frequency || 'mensual';
                     
+                    remainingCashflow = calculateRemainingCashflow(goal.id);
+                    availableCashflowEl.textContent = formatCurrency(remainingCashflow);
+                    cashflowInfo.classList.remove('hidden');
+
                     currentImage = goal.image;
                     if(currentImage) {
                         imagePreview.src = currentImage;
@@ -279,12 +297,13 @@
                 document.getElementById('goal-id').value = '';
                 deleteGoalBtn.classList.add('hidden');
 
-                const availableCashFlow = parseFloat(localStorage.getItem('availableCashFlow')) || 0;
-                if(availableCashFlow > 0) {
-                    availableCashflowEl.textContent = formatCurrency(availableCashFlow);
+                remainingCashflow = calculateRemainingCashflow();
+                if(remainingCashflow > 0) {
+                    availableCashflowEl.textContent = formatCurrency(remainingCashflow);
                     cashflowInfo.classList.remove('hidden');
                 } else {
-                    cashflowInfo.classList.add('hidden');
+                    availableCashflowEl.textContent = formatCurrency(0);
+                    cashflowInfo.classList.remove('hidden');
                 }
 
                 toggleModal(true);
@@ -306,9 +325,8 @@
             });
 
             assignCashflowBtn.addEventListener('click', () => {
-                const availableCashFlow = parseFloat(localStorage.getItem('availableCashFlow')) || 0;
                 const monthlySavingInput = document.getElementById('goal-saving-amount');
-                monthlySavingInput.value = new Intl.NumberFormat('es-CO').format(availableCashFlow);
+                monthlySavingInput.value = new Intl.NumberFormat('es-CO').format(remainingCashflow > 0 ? remainingCashflow : 0);
                 document.getElementById('goal-frequency').value = 'mensual';
             });
 
