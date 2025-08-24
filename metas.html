@@ -3,731 +3,216 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Diagnóstico de Finanzas Personales</title>
-    
-    <!-- Tailwind CSS CDN -->
+    <title>Mis Metas Financieras</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Chart.js Datalabels Plugin for percentages -->
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
-
-    <!-- jsPDF and html2canvas for PDF Export -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
-    <!-- Google Fonts: Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://css.gg/css?=|trash|reload" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
+    <link href="https://css.gg/css?=|add" rel="stylesheet">
     <style>
-        /* Estilo personalizado para usar la fuente Inter */
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        /* Estilo para los placeholders de los inputs */
-        ::placeholder {
-            color: #9ca3af;
-        }
-        .hidden {
-            display: none;
-        }
+        body { font-family: 'Inter', sans-serif; }
+        .goal-card { transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
+        .goal-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); }
     </style>
-    <link rel="manifest" href="manifest.json">
 </head>
 <body class="bg-slate-50 text-slate-800">
 
     <div class="container mx-auto p-4 md:p-8 max-w-7xl">
-        
-        <!-- Encabezado -->
         <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-slate-900">Panel de Salud Financiera</h1>
-            <p class="text-slate-600 mt-2">Analiza tus finanzas, entiende tus gastos y toma el control de tu dinero.</p>
+            <h1 class="text-3xl md:text-4xl font-bold text-slate-900">Tu Tablero de Sueños</h1>
+            <p class="text-slate-600 mt-2">Convierte tus metas en un plan. Cada peso que asignas es un paso hacia tu futuro.</p>
+            <a href="index.html" class="text-indigo-600 font-semibold mt-4 inline-block hover:underline">← Volver al Diagnóstico</a>
         </header>
 
-        <!-- Selector de Moneda -->
-        <div class="max-w-md mx-auto mb-8 bg-white p-4 rounded-lg shadow-md">
-            <label for="currency" class="block text-sm font-medium text-slate-700 text-center">Selecciona tu moneda principal</label>
-            <select id="currency" class="mt-2 block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-                <option value="COP">Pesos Colombianos (COP)</option>
-                <option value="USD">Dólares Americanos (USD)</option>
-            </select>
+        <!-- Botón para abrir el modal -->
+        <div class="text-center mb-8">
+            <button id="add-goal-btn" class="bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors inline-flex items-center gap-2">
+                <i class="gg-add"></i>
+                Crear Nueva Meta
+            </button>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            
-            <!-- Columna de Entrada de Datos -->
-            <div class="space-y-8">
-                
-                <!-- Card de Ingresos -->
-                <div class="bg-white p-6 rounded-lg shadow-md">
-                    <h2 class="text-xl font-semibold mb-4 border-b pb-2">1. Ingresos Mensuales</h2>
-                    <div id="incomes-container" class="space-y-4">
-                        <div>
-                            <label class="text-sm font-medium text-slate-700">Ingreso Principal</label>
-                            <input type="text" inputmode="decimal" placeholder="Ej: 3.000.000" class="mt-1 block w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 data-input">
-                        </div>
-                    </div>
-                    <button id="add-income" class="mt-4 text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition-colors">+ Añadir otro ingreso</button>
+        <!-- Contenedor de las tarjetas de metas -->
+        <div id="goals-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- Las tarjetas de metas se insertarán aquí -->
+        </div>
+
+        <!-- Modal para añadir/editar meta -->
+        <div id="goal-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
+            <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 id="modal-title" class="text-2xl font-bold">Crear Nueva Meta</h2>
+                    <button id="close-modal-btn" class="text-3xl leading-none text-slate-400 hover:text-slate-800 transition-colors">&times;</button>
                 </div>
-
-                <!-- Card de Gastos Fijos -->
-                <div class="bg-white p-6 rounded-lg shadow-md">
-                    <h2 class="text-xl font-semibold mb-4 border-b pb-2">2. Gastos Fijos Mensuales</h2>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <form id="goal-form">
+                    <input type="hidden" id="goal-id">
+                    <div class="space-y-4">
                         <div>
-                            <label class="text-sm font-medium text-slate-700">Arriendo / Hipoteca</label>
-                            <input type="text" inputmode="decimal" placeholder="0" class="mt-1 block w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 data-input fixed-expense">
+                            <label for="goal-name" class="block text-sm font-medium text-slate-700">Nombre de tu Meta</label>
+                            <input type="text" id="goal-name" placeholder="Ej: Viaje a Japón 🇯🇵" class="mt-1 block w-full p-2 border border-slate-300 rounded-md" required>
                         </div>
                         <div>
-                            <label class="text-sm font-medium text-slate-700">Servicios (Agua, Luz, Gas)</label>
-                            <input type="text" inputmode="decimal" placeholder="0" class="mt-1 block w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 data-input fixed-expense">
+                            <label for="goal-target" class="block text-sm font-medium text-slate-700">Monto Objetivo</label>
+                            <input type="number" id="goal-target" placeholder="5000000" class="mt-1 block w-full p-2 border border-slate-300 rounded-md" required>
                         </div>
                         <div>
-                            <label class="text-sm font-medium text-slate-700">Internet / Celular</label>
-                            <input type="text" inputmode="decimal" placeholder="0" class="mt-1 block w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 data-input fixed-expense">
+                            <label for="goal-saved" class="block text-sm font-medium text-slate-700">Ahorro Actual</label>
+                            <input type="number" id="goal-saved" placeholder="0" class="mt-1 block w-full p-2 border border-slate-300 rounded-md" required>
                         </div>
                         <div>
-                            <label class="text-sm font-medium text-slate-700">Suscripciones</label>
-                            <input type="text" inputmode="decimal" placeholder="0" class="mt-1 block w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 data-input fixed-expense">
+                            <label for="goal-image-upload" class="block text-sm font-medium text-slate-700">Imagen Inspiradora</label>
+                            <input type="file" id="goal-image-upload" class="mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" accept="image/*">
+                            <img id="image-preview" src="" alt="Vista previa de la imagen" class="mt-2 rounded-md max-h-32 hidden">
                         </div>
                     </div>
-                </div>
-
-                <!-- Card de Gastos Variables -->
-                <div class="bg-white p-6 rounded-lg shadow-md">
-                    <h2 class="text-xl font-semibold mb-4 border-b pb-2">3. Gastos Variables Mensuales</h2>
-                    <form id="variable-expense-form" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
-                        <div class="md:col-span-2">
-                            <label for="expense-desc" class="text-sm font-medium text-slate-700">Descripción</label>
-                            <input type="text" id="expense-desc" placeholder="Mercado del mes" class="mt-1 block w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                        </div>
-                        <div>
-                            <label for="expense-amount" class="text-sm font-medium text-slate-700">Monto</label>
-                            <input type="text" inputmode="decimal" id="expense-amount" placeholder="0" class="mt-1 block w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                        </div>
-                        <div class="md:col-span-2">
-                            <label for="expense-category" class="text-sm font-medium text-slate-700">Categoría</label>
-                            <select id="expense-category" class="mt-1 block w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                                <option>Alimentación</option>
-                                <option>Transporte</option>
-                                <option>Ocio y Entretenimiento</option>
-                                <option>Educación</option>
-                                <option>Salud</option>
-                                <option>Ropa</option>
-                                <option>Otros</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="md:col-span-2 w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">Añadir Gasto</button>
-                    </form>
-                    <div id="variable-expenses-list" class="mt-6">
-                        <!-- Los gastos variables se añadirán aquí -->
+                    <div class="mt-6 flex justify-end gap-4">
+                         <button type="button" id="delete-goal-btn" class="bg-red-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-red-700 hidden">Eliminar</button>
+                        <button type="submit" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700">Guardar Meta</button>
                     </div>
-                </div>
-            </div>
-
-            <!-- Columna del Dashboard de Análisis -->
-            <div class="space-y-8">
-                
-                <div id="report-content"> <!-- Contenedor para el contenido del PDF -->
-                    <!-- Resumen General -->
-                    <div class="bg-white p-6 rounded-lg shadow-md mb-8">
-                        <h2 class="text-xl font-semibold mb-4">Análisis Financiero</h2>
-                        <div class="space-y-4">
-                            <div class="flex justify-between items-center p-3 bg-slate-100 rounded-md">
-                                <span class="font-medium">Ingresos Totales:</span>
-                                <span id="total-income" class="font-bold text-lg text-green-600">0</span>
-                            </div>
-                            <div class="flex justify-between items-center p-3 bg-slate-100 rounded-md">
-                                <span class="font-medium">Gastos Totales:</span>
-                                <span id="total-expenses" class="font-bold text-lg text-red-600">0</span>
-                            </div>
-                            <div class="flex justify-between items-center p-4 bg-slate-200 rounded-md">
-                                <span class="font-semibold text-lg">Flujo de Caja Mensual:</span>
-                                <span id="cash-flow" class="font-extrabold text-2xl">0</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Gráfico de Gastos -->
-                    <div class="bg-white p-6 rounded-lg shadow-md mb-8">
-                        <h2 class="text-xl font-semibold mb-4">Distribución de Gastos</h2>
-                        <div class="w-full max-w-md mx-auto">
-                            <canvas id="expenses-chart"></canvas>
-                        </div>
-                    </div>
-
-                    <!-- Diagnóstico y Recomendaciones -->
-                    <div class="bg-white p-6 rounded-lg shadow-md">
-                        <div class="flex justify-between items-start mb-4">
-                            <h2 class="text-xl font-semibold">Tu Asesor Financiero Personal</h2>
-                            <button id="reset-btn" title="Resetear todos los datos" class="flex items-center gap-2 text-sm bg-slate-200 hover:bg-red-200 text-slate-700 hover:text-red-800 font-semibold py-1 px-3 rounded-lg transition-colors">
-                                <i class="gg-reload"></i>
-                                Resetear
-                            </button>
-                        </div>
-                        <div id="diagnosis-container" class="space-y-4">
-                            <button id="diagnose-btn" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors text-lg">
-                                Generar Diagnóstico Financiero
-                            </button>
-                            
-                            <div id="financial-health" class="text-center p-4 rounded-lg mb-4 hidden">
-                                <h3 id="health-status" class="text-lg font-bold"></h3>
-                                <p id="health-message" class="mt-1 text-sm"></p>
-                            </div>
-                            
-                            <div id="detailed-analysis" class="p-3 bg-slate-50 rounded-md border-l-4 border-blue-500 hidden">
-                                <!-- Análisis detallado se insertará aquí -->
-                            </div>
-                            
-                            <div id="recommendations" class="mt-4 space-y-4 text-sm text-slate-700 hidden">
-                                <!-- Las recomendaciones se generarán aquí -->
-                            </div>
-
-                            <div id="investor-profile-container" class="p-4 bg-slate-100 rounded-lg hidden">
-                                <h4 class="font-semibold text-center text-slate-800 mb-3">¿Listo para Invertir? Define tu Perfil</h4>
-                                <p class="text-center text-xs text-slate-600 mb-3">Tu elección determinará las estrategias de inversión recomendadas.</p>
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                    <button data-profile="conservador" class="profile-btn w-full bg-sky-600 text-white font-semibold py-2 px-3 rounded-md hover:bg-sky-700 transition-colors">Conservador</button>
-                                    <button data-profile="moderado" class="profile-btn w-full bg-amber-600 text-white font-semibold py-2 px-3 rounded-md hover:bg-amber-700 transition-colors">Moderado</button>
-                                    <button data-profile="agresivo" class="profile-btn w-full bg-red-600 text-white font-semibold py-2 px-3 rounded-md hover:bg-red-700 transition-colors">Agresivo</button>
-                                </div>
-                            </div>
-                            
-                            <div id="investment-recommendations" class="mt-4 space-y-4 text-sm text-slate-700 hidden">
-                                <!-- Las recomendaciones de inversión se generarán aquí -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <button id="export-pdf-btn" class="w-full bg-gray-800 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors text-lg hidden">
-                    Mi Primer Plan Financiero (PDF)
-                </button>
-
+                </form>
             </div>
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- STATE MANAGEMENT ---
-            let state = {
-                currency: 'COP',
-                variableExpenses: [],
-                currentDiagnosis: null,
-                investorProfile: null,
-            };
-            let expenseChart = null;
+            let goals = [];
+            let currentImage = null;
+            const goalsContainer = document.getElementById('goals-container');
+            const addGoalBtn = document.getElementById('add-goal-btn');
+            const modal = document.getElementById('goal-modal');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            const goalForm = document.getElementById('goal-form');
+            const modalTitle = document.getElementById('modal-title');
+            const deleteGoalBtn = document.getElementById('delete-goal-btn');
+            const imageUploadInput = document.getElementById('goal-image-upload');
+            const imagePreview = document.getElementById('image-preview');
 
-            // --- DOM ELEMENTS ---
-            const currencySelector = document.getElementById('currency');
-            const incomesContainer = document.getElementById('incomes-container');
-            const addIncomeBtn = document.getElementById('add-income');
-            const variableExpenseForm = document.getElementById('variable-expense-form');
-            const variableExpensesList = document.getElementById('variable-expenses-list');
-            const totalIncomeEl = document.getElementById('total-income');
-            const totalExpensesEl = document.getElementById('total-expenses');
-            const cashFlowEl = document.getElementById('cash-flow');
-            
-            // Diagnosis Section Elements
-            const resetBtn = document.getElementById('reset-btn');
-            const diagnoseBtn = document.getElementById('diagnose-btn');
-            const financialHealthEl = document.getElementById('financial-health');
-            const healthStatusEl = document.getElementById('health-status');
-            const healthMessageEl = document.getElementById('health-message');
-            const detailedAnalysisEl = document.getElementById('detailed-analysis');
-            const investorProfileContainer = document.getElementById('investor-profile-container');
-            const recommendationsEl = document.getElementById('recommendations');
-            const investmentRecommendationsEl = document.getElementById('investment-recommendations');
-            const exportPdfBtn = document.getElementById('export-pdf-btn');
-            
-            const chartCanvasEl = document.getElementById('expenses-chart');
-            const chartCanvas = chartCanvasEl.getContext('2d');
+            const toggleModal = (show) => modal.classList.toggle('hidden', !show);
 
-            // --- UTILITY FUNCTIONS ---
-            const parseFormattedNumber = (value) => parseFloat(String(value).replace(/\./g, '')) || 0;
-
-            const formatInputAsNumber = (e) => {
-                const input = e.target;
-                const rawValue = input.value.replace(/[^\d]/g, '');
-                input.value = rawValue ? new Intl.NumberFormat('es-CO').format(rawValue) : '';
-            };
-            
-            // --- FORMATTING ---
-            const formatCurrency = (amount) => {
-                const options = { style: 'currency', currency: state.currency, minimumFractionDigits: 0, maximumFractionDigits: 0 };
-                if (state.currency === 'USD') {
-                    options.minimumFractionDigits = 2;
-                    options.maximumFractionDigits = 2;
+            const renderGoals = () => {
+                goalsContainer.innerHTML = '';
+                if (goals.length === 0) {
+                    goalsContainer.innerHTML = `<p class="text-center text-slate-500 md:col-span-2 lg:col-span-3">Aún no tienes metas. ¡Crea tu primer sueño!</p>`;
                 }
-                return new Intl.NumberFormat('es-CO', options).format(amount);
-            };
+                goals.forEach(goal => {
+                    const percentage = goal.target > 0 ? (goal.saved / goal.target * 100) : 0;
+                    const card = document.createElement('div');
+                    card.className = 'goal-card bg-white rounded-lg shadow-md p-6 cursor-pointer flex flex-col';
+                    card.dataset.id = goal.id;
+                    
+                    const placeholderImg = `https://placehold.co/600x400/e2e8f0/475569?text=${encodeURIComponent(goal.name)}`;
 
-            // --- EVENT LISTENERS ---
-            currencySelector.addEventListener('change', (e) => {
-                state.currency = e.target.value;
-                updateDashboard();
-            });
-
-            addIncomeBtn.addEventListener('click', () => {
-                const newIncomeDiv = document.createElement('div');
-                newIncomeDiv.className = 'relative';
-                newIncomeDiv.innerHTML = `
-                    <div class="flex items-center gap-2">
-                        <div class="flex-grow">
-                             <label class="text-sm font-medium text-slate-700">Otro Ingreso</label>
-                             <input type="text" inputmode="decimal" placeholder="Ej: 500.000" class="mt-1 block w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 data-input">
+                    card.innerHTML = `
+                        <img src="${goal.image || placeholderImg}" onerror="this.src='${placeholderImg}'" alt="${goal.name}" class="w-full h-40 object-cover rounded-md mb-4">
+                        <h3 class="text-xl font-bold mb-2">${goal.name}</h3>
+                        <div class="text-sm text-slate-600 mb-4">
+                            <p><strong>Meta:</strong> ${formatCurrency(goal.target)}</p>
+                            <p><strong>Ahorrado:</strong> ${formatCurrency(goal.saved)}</p>
                         </div>
-                        <button class="remove-income self-end mb-1 text-slate-400 hover:text-red-600 transition-colors" title="Eliminar ingreso">
-                            <i class="gg-trash"></i>
-                        </button>
-                    </div>
-                `;
-                const newInput = newIncomeDiv.querySelector('input');
-                newInput.addEventListener('input', formatInputAsNumber);
-                newInput.addEventListener('input', updateDashboard);
-                newIncomeDiv.querySelector('.remove-income').addEventListener('click', () => {
-                    newIncomeDiv.remove();
-                    updateDashboard();
+                        <div class="w-full bg-slate-200 rounded-full h-4 mt-auto">
+                            <div class="bg-green-500 h-4 rounded-full text-center text-white text-xs font-semibold" style="width: ${percentage > 100 ? 100 : percentage}%">${percentage.toFixed(0)}%</div>
+                        </div>
+                    `;
+                    card.addEventListener('click', () => editGoal(goal.id));
+                    goalsContainer.appendChild(card);
                 });
-                incomesContainer.appendChild(newIncomeDiv);
+            };
+
+            const saveGoals = () => {
+                localStorage.setItem('financialGoals', JSON.stringify(goals));
+            };
+
+            const loadGoals = () => {
+                const savedGoals = localStorage.getItem('financialGoals');
+                if (savedGoals) {
+                    goals = JSON.parse(savedGoals);
+                }
+                renderGoals();
+            };
+            
+            const formatCurrency = (amount) => {
+                return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(amount);
+            };
+
+            const editGoal = (id) => {
+                const goal = goals.find(g => g.id === id);
+                if (goal) {
+                    modalTitle.textContent = 'Editar Meta';
+                    document.getElementById('goal-id').value = goal.id;
+                    document.getElementById('goal-name').value = goal.name;
+                    document.getElementById('goal-target').value = goal.target;
+                    document.getElementById('goal-saved').value = goal.saved;
+                    
+                    currentImage = goal.image; // Store current image
+                    if(currentImage) {
+                        imagePreview.src = currentImage;
+                        imagePreview.classList.remove('hidden');
+                    } else {
+                        imagePreview.classList.add('hidden');
+                    }
+                    
+                    deleteGoalBtn.classList.remove('hidden');
+                    toggleModal(true);
+                }
+            };
+
+            addGoalBtn.addEventListener('click', () => {
+                modalTitle.textContent = 'Crear Nueva Meta';
+                goalForm.reset();
+                imagePreview.classList.add('hidden');
+                currentImage = null;
+                document.getElementById('goal-id').value = '';
+                deleteGoalBtn.classList.add('hidden');
+                toggleModal(true);
             });
 
-            variableExpenseForm.addEventListener('submit', (e) => {
+            closeModalBtn.addEventListener('click', () => toggleModal(false));
+            
+            imageUploadInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        currentImage = event.target.result;
+                        imagePreview.src = currentImage;
+                        imagePreview.classList.remove('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            goalForm.addEventListener('submit', (e) => {
                 e.preventDefault();
-                const description = document.getElementById('expense-desc').value;
-                const amount = parseFormattedNumber(document.getElementById('expense-amount').value);
-                const category = document.getElementById('expense-category').value;
+                const id = document.getElementById('goal-id').value;
+                const goalData = {
+                    name: document.getElementById('goal-name').value,
+                    target: parseFloat(document.getElementById('goal-target').value),
+                    saved: parseFloat(document.getElementById('goal-saved').value),
+                    image: currentImage, // Use the stored image data URL
+                };
 
-                if (description && amount > 0) {
-                    state.variableExpenses.push({ id: Date.now(), description, amount, category });
-                    renderVariableExpenses();
-                    updateDashboard();
-                    variableExpenseForm.reset();
-                }
-            });
-            
-            document.querySelectorAll('.data-input, #expense-amount').forEach(input => {
-                input.addEventListener('input', formatInputAsNumber);
-                input.addEventListener('input', updateDashboard);
-            });
-
-            diagnoseBtn.addEventListener('click', runDiagnosis);
-            investorProfileContainer.addEventListener('click', (e) => {
-                if (e.target.classList.contains('profile-btn')) {
-                    state.investorProfile = e.target.dataset.profile;
-                    showInvestmentPlan();
-                }
-            });
-            resetBtn.addEventListener('click', resetAllData);
-            exportPdfBtn.addEventListener('click', exportToPDF);
-
-            // --- RENDER FUNCTIONS ---
-            const renderVariableExpenses = () => {
-                variableExpensesList.innerHTML = state.variableExpenses.length === 0 
-                    ? `<p class="text-center text-sm text-slate-500">Aún no has añadido gastos variables.</p>` 
-                    : '';
-                if (state.variableExpenses.length > 0) {
-                    const list = document.createElement('ul');
-                    list.className = 'space-y-2';
-                    state.variableExpenses.forEach(expense => {
-                        const item = document.createElement('li');
-                        item.className = 'flex justify-between items-center bg-slate-50 p-2 rounded-md';
-                        item.innerHTML = `
-                            <div>
-                                <span class="font-medium">${expense.description}</span>
-                                <span class="text-xs text-slate-500 block">${expense.category}</span>
-                            </div>
-                            <div class="flex items-center gap-4">
-                               <span class="font-semibold">${formatCurrency(expense.amount)}</span>
-                               <button data-id="${expense.id}" class="remove-expense text-red-500 hover:text-red-700 text-2xl leading-none">&times;</button>
-                            </div>
-                        `;
-                        list.appendChild(item);
-                    });
-                    variableExpensesList.appendChild(list);
-
-                    document.querySelectorAll('.remove-expense').forEach(button => {
-                        button.addEventListener('click', (e) => {
-                            const idToRemove = parseInt(e.target.dataset.id);
-                            state.variableExpenses = state.variableExpenses.filter(exp => exp.id !== idToRemove);
-                            renderVariableExpenses();
-                            updateDashboard();
-                        });
-                    });
-                }
-            };
-            
-            // Register the datalabels plugin globally
-            Chart.register(ChartDataLabels);
-
-            const renderChart = (expenseCategories) => {
-                if (expenseChart) expenseChart.destroy();
-                const labels = Object.keys(expenseCategories);
-                const data = Object.values(expenseCategories);
-
-                if (labels.length === 0) {
-                    chartCanvasEl.parentElement.parentElement.classList.add('hidden');
-                    return;
-                }
-                chartCanvasEl.parentElement.parentElement.classList.remove('hidden');
-
-                expenseChart = new Chart(chartCanvas, {
-                    type: 'pie',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Gastos por Categoría',
-                            data: data,
-                            backgroundColor: ['rgba(79, 70, 229, 0.8)', 'rgba(239, 68, 68, 0.8)', 'rgba(245, 158, 11, 0.8)', 'rgba(16, 185, 129, 0.8)', 'rgba(59, 130, 246, 0.8)', 'rgba(139, 92, 246, 0.8)', 'rgba(236, 72, 153, 0.8)', 'rgba(96, 165, 250, 0.8)'],
-                            borderColor: 'rgba(255, 255, 255, 1)',
-                            borderWidth: 2
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: { 
-                                position: 'top' 
-                            },
-                            tooltip: { 
-                                callbacks: { 
-                                    label: (context) => `${context.label || ''}: ${formatCurrency(context.parsed)}` 
-                                } 
-                            },
-                            datalabels: {
-                                formatter: (value, ctx) => {
-                                    const datapoints = ctx.chart.data.datasets[0].data;
-                                    const total = datapoints.reduce((total, datapoint) => total + datapoint, 0);
-                                    const percentage = (value / total * 100);
-                                    return percentage > 5 ? percentage.toFixed(1) + "%" : ''; // Only show for slices > 5%
-                                },
-                                color: '#fff',
-                                font: {
-                                    weight: 'bold',
-                                    size: 14,
-                                }
-                            }
-                        }
-                    }
-                });
-            };
-            
-            // --- CORE LOGIC ---
-            function updateDashboard() {
-                let totalIncome = 0;
-                document.querySelectorAll('#incomes-container input').forEach(input => totalIncome += parseFormattedNumber(input.value));
-
-                let totalFixedExpenses = 0;
-                document.querySelectorAll('.fixed-expense').forEach(input => totalFixedExpenses += parseFormattedNumber(input.value));
-
-                const totalVariableExpenses = state.variableExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-                const totalExpenses = totalFixedExpenses + totalVariableExpenses;
-                const cashFlow = totalIncome - totalExpenses;
-
-                totalIncomeEl.textContent = formatCurrency(totalIncome);
-                totalExpensesEl.textContent = formatCurrency(totalExpenses);
-                cashFlowEl.textContent = formatCurrency(cashFlow);
-                cashFlowEl.classList.toggle('text-green-600', cashFlow >= 0);
-                cashFlowEl.classList.toggle('text-red-600', cashFlow < 0);
-
-                const expenseCategories = {};
-                if (totalFixedExpenses > 0) expenseCategories['Gastos Fijos'] = totalFixedExpenses;
-                state.variableExpenses.forEach(exp => {
-                    expenseCategories[exp.category] = (expenseCategories[exp.category] || 0) + exp.amount;
-                });
-                renderChart(expenseCategories);
-
-                resetDiagnosisSection();
-            }
-            
-            function resetAllData() {
-                document.querySelectorAll('.data-input').forEach(input => input.value = '');
-                const dynamicIncomes = incomesContainer.querySelectorAll('div:not(:first-child)');
-                dynamicIncomes.forEach(div => div.remove());
-                variableExpenseForm.reset();
-                state.variableExpenses = [];
-                renderVariableExpenses();
-                updateDashboard();
-            }
-
-            function resetDiagnosisSection() {
-                diagnoseBtn.classList.remove('hidden');
-                financialHealthEl.classList.add('hidden');
-                detailedAnalysisEl.classList.add('hidden');
-                investorProfileContainer.classList.add('hidden');
-                recommendationsEl.classList.add('hidden');
-                investmentRecommendationsEl.classList.add('hidden');
-                exportPdfBtn.classList.add('hidden');
-                state.currentDiagnosis = null;
-                state.investorProfile = null;
-            }
-
-            function runDiagnosis() {
-                let totalIncome = 0;
-                document.querySelectorAll('#incomes-container input').forEach(input => totalIncome += parseFormattedNumber(input.value));
-
-                if (totalIncome === 0) {
-                    financialHealthEl.className = 'text-center p-4 rounded-lg mb-4 bg-amber-100 text-amber-800';
-                    healthStatusEl.textContent = 'Datos Incompletos';
-                    healthMessageEl.textContent = 'Por favor, ingresa primero tus ingresos para poder generar un diagnóstico.';
-                    financialHealthEl.classList.remove('hidden');
-                    detailedAnalysisEl.classList.add('hidden');
-                    investorProfileContainer.classList.add('hidden');
-                    return;
-                }
-                
-                let totalFixedExpenses = 0;
-                document.querySelectorAll('.fixed-expense').forEach(input => totalFixedExpenses += parseFormattedNumber(input.value));
-                const totalVariableExpenses = state.variableExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-                const totalExpenses = totalFixedExpenses + totalVariableExpenses;
-                const cashFlow = totalIncome - totalExpenses;
-
-                const savingPercentage = (cashFlow / totalIncome) * 100;
-                let status, message, bgColor, textColor;
-
-                if (cashFlow < 0) {
-                    [status, message, bgColor, textColor] = ['Crítica', 'Estás en un punto de inflexión. ¡Es el momento perfecto para tomar decisiones valientes!', 'bg-red-100', 'text-red-800'];
-                } else if (savingPercentage < 10) {
-                    [status, message, bgColor, textColor] = ['En Riesgo', 'Estás cerca del equilibrio. Unos pequeños ajustes estratégicos harán una gran diferencia.', 'bg-amber-100', 'text-amber-800'];
-                } else if (savingPercentage <= 20) {
-                    [status, message, bgColor, textColor] = ['Estable', 'Has construido una base sólida. Es momento de pasar de ahorrar a construir patrimonio.', 'bg-blue-100', 'text-blue-800'];
+                if (id) {
+                    const index = goals.findIndex(g => g.id == id);
+                    goals[index] = { ...goals[index], ...goalData };
                 } else {
-                    [status, message, bgColor, textColor] = ['Saludable', '¡Excelente! Tienes el control. Ahora el juego es optimizar y acelerar tu crecimiento.', 'bg-green-100', 'text-green-800'];
+                    goals.push({ id: Date.now(), ...goalData });
                 }
-
-                financialHealthEl.className = `text-center p-4 rounded-lg mb-4 ${bgColor} ${textColor}`;
-                healthStatusEl.textContent = `Salud Financiera: ${status}`;
-                healthMessageEl.textContent = message;
-
-                const fixedPercentage = totalIncome > 0 ? (totalFixedExpenses / totalIncome * 100).toFixed(1) : 0;
-                const variablePercentage = totalIncome > 0 ? (totalVariableExpenses / totalIncome * 100).toFixed(1) : 0;
-                detailedAnalysisEl.innerHTML = `
-                    <h4 class="font-semibold text-slate-900">Análisis de Gastos</h4>
-                    <p class="mt-1">Tus <strong>gastos fijos</strong> representan el <strong>${fixedPercentage}%</strong> de tus ingresos.</p>
-                    <p class="mt-1">Tus <strong>gastos variables</strong> representan el <strong>${variablePercentage}%</strong> de tus ingresos.</p>
-                `;
-
-                diagnoseBtn.classList.add('hidden');
-                financialHealthEl.classList.remove('hidden');
-                detailedAnalysisEl.classList.remove('hidden');
                 
-                const expenseCategories = {};
-                if (totalFixedExpenses > 0) expenseCategories['Gastos Fijos'] = totalFixedExpenses;
-                state.variableExpenses.forEach(exp => {
-                    expenseCategories[exp.category] = (expenseCategories[exp.category] || 0) + exp.amount;
-                });
-                state.currentDiagnosis = { status, expenseCategories };
-
-                generateInitialRecommendations(status, expenseCategories);
-                recommendationsEl.classList.remove('hidden');
-
-                if (status === 'Estable' || status === 'Saludable') {
-                    investorProfileContainer.classList.remove('hidden');
-                } else {
-                    exportPdfBtn.classList.remove('hidden');
-                }
-            }
-
-            function showInvestmentPlan() {
-                if (!state.currentDiagnosis || !state.investorProfile) return;
-                
-                generateInvestmentRecommendations(state.investorProfile);
-
-                investorProfileContainer.classList.add('hidden');
-                investmentRecommendationsEl.classList.remove('hidden');
-                exportPdfBtn.classList.remove('hidden');
-            }
-
-            function generateInitialRecommendations(status, expenseCategories) {
-                recommendationsEl.innerHTML = ' <h4 class="font-semibold text-xl text-slate-800 mb-2">Tu Plan de Acción Inicial</h4>';
-                const addRecommendation = (title, text) => {
-                    recommendationsEl.innerHTML += `
-                        <div class="p-3 bg-slate-50 rounded-md border-l-4 border-indigo-500">
-                            <h4 class="font-semibold text-slate-900">${title}</h4>
-                            <p class="mt-1">${text}</p>
-                        </div>`;
-                };
-                
-                switch (status) {
-                    case 'Crítica':
-                        addRecommendation('Tu Misión para Hoy: La Victoria de los 10 Minutos', 'Olvídate de todo lo demás. Tu único objetivo ahora es tomar UNA decisión que te devuelva el control. Cancela UNA suscripción, haz UNA llamada para negociar un pago. El objetivo no es el dinero, es la victoria psicológica. ¡Hazlo ahora!');
-                        addRecommendation('Estrategia "Bola de Nieve": El Poder de la Motivación', 'Enfócate en tu deuda más pequeña, sin importar la tasa de interés. Atácala con todo lo que puedas. Al eliminarla rápido, obtendrás una inyección de confianza que te impulsará a conquistar la siguiente. Esto es más sobre psicología que sobre matemáticas.');
-                        addRecommendation('Táctica de Control: La "Caja de Efectivo Semanal"', 'Saca en efectivo el dinero para tus gastos variables de la semana (comida, transporte). Usa SOLO ese dinero. Verlo disminuir físicamente te reconecta con el valor real de tus gastos, algo que el dinero digital oculta.');
-                        break;
-                    case 'En Riesgo':
-                        addRecommendation('Hábito Atómico: La Regla del 1%', 'Cada mes, aumenta tu tasa de ahorro en solo un 1%. Es un cambio tan pequeño que no lo sentirás en tu día a día, pero en un año estarás ahorrando un 12% adicional de tus ingresos sin esfuerzo y sin sacrificar tu estilo de vida.');
-                        addRecommendation('Técnica de Conciencia: "Auditoría de Felicidad por Gasto"', 'Al final de la semana, mira tus gastos variables y califícalos del 1 al 10 según la felicidad que te aportaron. Te sorprenderá ver cuánto dinero se va en gastos de baja calificación (3/10, 4/10). El próximo mes, tu misión es reducir solo esos.');
-                        addRecommendation('Reto de 48 Horas: "El Enfriamiento"', 'Para cualquier compra no esencial superior a $50.000 COP / $15 USD, ponla en una lista de "enfriamiento" por 48 horas. Si después de dos días todavía la quieres y es una decisión inteligente, adelante. El 90% de los impulsos no sobrevivirán.');
-                        break;
-                    case 'Estable':
-                        addRecommendation('Fundamento Sólido: El Fondo "Anti-Murphy"', 'Olvídate de los "6 meses de gastos". Tu primera meta es un fondo de emergencia de un millón de pesos (o $250 USD). Es tu barrera contra pequeñas crisis (una llanta pinchada, una cita médica). Es una meta rápida y te dará una inmensa paz mental.');
-                        addRecommendation('Acelerador de Riqueza: Invierte en tu "Capital Humano"', 'Tu mayor activo eres tú. Usa una parte de tu ahorro para adquirir una habilidad de alta demanda (certificación en marketing digital, un curso de IA, etc.). El retorno de esta inversión puede superar por mucho al del mercado de valores.');
-                        addRecommendation('Siguiente Nivel: Tu Primer "Micro-Portafolio"', 'La inversión no tiene por qué ser compleja. Ahora que tienes una base, es el momento de poner tu dinero a trabajar. Define tu perfil de inversor a continuación para recibir estrategias claras.');
-                        break;
-                    case 'Saludable':
-                        addRecommendation('Estrategia de Crecimiento: El "Fondo de Oportunidades"', 'Además de tu fondo de emergencia, crea un "Fondo de Oportunidades". Es dinero líquido destinado a aprovechar caídas del mercado o ideas de negocio inesperadas. Cuando todos venden por pánico, tú compras con calma.');
-                        addRecommendation('Optimización Avanzada: Eficiencia Fiscal', 'Investiga sobre productos financieros que ofrezcan beneficios fiscales en tu país (pensiones voluntarias, AFCs). Pagar menos impuestos legalmente es una forma sofisticada de acelerar tu patrimonio.');
-                        addRecommendation('Visión a Largo Plazo: Define tu Estrategia de Inversión', 'Tienes el control de tus finanzas. Es hora de que tu dinero trabaje tan duro como tú. Elige tu perfil de inversor a continuación para diseñar tu portafolio ideal.');
-                        break;
-                }
-            }
+                saveGoals();
+                renderGoals();
+                toggleModal(false);
+            });
             
-            function generateInvestmentRecommendations(profile) {
-                investmentRecommendationsEl.innerHTML = '<h4 class="font-semibold text-xl text-slate-800 mb-2">Estrategias de Inversión Potentes</h4>';
-                const addRecommendation = (title, text) => {
-                    investmentRecommendationsEl.innerHTML += `
-                        <div class="p-3 bg-slate-50 rounded-md border-l-4 border-green-500">
-                            <h4 class="font-semibold text-slate-900">${title}</h4>
-                            <p class="mt-1">${text}</p>
-                        </div>`;
-                };
-
-                addRecommendation(`Plan de Inversión para un Perfil ${profile.charAt(0).toUpperCase() + profile.slice(1)}`, `Basado en tu perfil, aquí tienes una estrategia de inversión potente y clara para empezar a construir tu patrimonio.`);
-
-                switch(profile) {
-                    case 'conservador':
-                        addRecommendation('Estrategia "Escalera de Bonos"', 'En lugar de poner todo en un solo CDT, diversifica en varios con diferentes vencimientos (ej. a 90, 180, 365 días). A medida que venzan, los reinviertes a las tasas actuales. Esto te protege de las fluctuaciones de las tasas de interés y te da liquidez periódica.');
-                        addRecommendation('El Pilar Inmobiliario: FIBRAS/REITs', 'Invierte en el mercado inmobiliario sin comprar una propiedad. Los fondos de inversión inmobiliaria (FIBRAS en México, REITs en USA, o a través de fondos en Colombia) te permiten recibir rentas de centros comerciales, oficinas, etc., con bajo capital y alta diversificación.');
-                        break;
-                    case 'moderado':
-                        addRecommendation('El Núcleo de tu Portafolio: La Estrategia "Core-Satellite"', 'Asigna el 70% de tu inversión ("Core") a un ETF de bajo costo que siga al mercado global (ej. VT). Usa el 30% restante ("Satellite") para apuestas más concentradas, como un ETF del sector tecnológico (ej. QQQ) o acciones de una empresa local que conozcas bien.');
-                        addRecommendation('Inversión Temática: Megatendencias', 'Dedica una pequeña parte de tu portafolio a invertir en el futuro. Elige una o dos "megatendencias" que creas que dominarán los próximos años (ej. Inteligencia Artificial, Energías Limpias, Ciberseguridad) e invierte a través de ETFs especializados.');
-                        break;
-                    case 'agresivo':
-                        addRecommendation('Potencial de Crecimiento: Acciones "Small-Cap"', 'Las grandes empresas ya crecieron. El verdadero potencial exponencial está en las empresas más pequeñas e innovadoras ("small-caps"). Invierte a través de un ETF (ej. IWM) para diversificar el riesgo y capturar el crecimiento de las futuras líderes del mercado.');
-                        addRecommendation('La Frontera Digital: Activos Digitales con Propósito', 'Más allá de la especulación, asigna un 1-3% de tu portafolio a criptoactivos sólidos con casos de uso claros (ej. Ethereum para contratos inteligentes, o proyectos de finanzas descentralizadas - DeFi). Es una apuesta asimétrica: el riesgo es limitado, pero el potencial de ganancia es enorme.');
-                        break;
+            deleteGoalBtn.addEventListener('click', () => {
+                const id = document.getElementById('goal-id').value;
+                if (confirm('¿Estás seguro de que quieres eliminar esta meta?')) {
+                    goals = goals.filter(g => g.id != id);
+                    saveGoals();
+                    renderGoals();
+                    toggleModal(false);
                 }
-            }
+            });
 
-            function exportToPDF() {
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-                const exportButton = document.getElementById('export-pdf-btn');
-                exportButton.textContent = 'Generando PDF...';
-
-                let y = 15; // Posición Y inicial
-                const pageHeight = pdf.internal.pageSize.getHeight();
-                const pageWidth = pdf.internal.pageSize.getWidth();
-                const margin = 15;
-                const maxWidth = pageWidth - margin * 2;
-
-                // --- Helper para añadir secciones y manejar saltos de página ---
-                const addSection = (title, contentFn) => {
-                    if (y + 20 > pageHeight - margin) { // Espacio para el título
-                        pdf.addPage();
-                        y = margin;
-                    }
-                    pdf.setFontSize(16);
-                    pdf.setFont(undefined, 'bold');
-                    pdf.text(title, margin, y);
-                    y += 8;
-                    pdf.setFont(undefined, 'normal');
-                    pdf.setFontSize(11);
-                    contentFn();
-                };
-                
-                // --- Helper para texto con auto-wrap ---
-                const addWrappedText = (text, options = {}) => {
-                    const lines = pdf.splitTextToSize(text, options.maxWidth || maxWidth);
-                    const lineHeight = 6;
-                    if (y + (lines.length * lineHeight) > pageHeight - margin) {
-                        pdf.addPage();
-                        y = margin;
-                    }
-                    pdf.text(lines, margin + (options.indent || 0), y);
-                    y += lines.length * lineHeight;
-                };
-
-                // --- Construcción del PDF ---
-                // Título
-                pdf.setFontSize(24);
-                pdf.setFont(undefined, 'bold');
-                pdf.text("Mi Primer Plan Financiero", pageWidth / 2, y, { align: 'center' });
-                y += 8;
-                pdf.setFontSize(10);
-                pdf.setFont(undefined, 'normal');
-                pdf.text(`Reporte generado el: ${new Date().toLocaleDateString('es-ES')}`, pageWidth / 2, y, { align: 'center' });
-                y += 15;
-
-                // Sección de Resumen
-                addSection("1. Resumen Financiero", () => {
-                    pdf.text(`Ingresos Totales: ${totalIncomeEl.textContent}`, margin, y); y += 7;
-                    pdf.text(`Gastos Totales: ${totalExpensesEl.textContent}`, margin, y); y += 7;
-                    pdf.text(`Flujo de Caja Mensual: ${cashFlowEl.textContent}`, margin, y); y += 10;
-                    pdf.setFont(undefined, 'bold');
-                    pdf.text(`Diagnóstico: ${healthStatusEl.textContent}`, margin, y); y += 7;
-                    pdf.setFont(undefined, 'normal');
-                    addWrappedText(healthMessageEl.textContent);
-                    y += 5;
-                });
-
-                // Sección de Gráfico
-                addSection("2. Distribución de Gastos", () => {
-                    const chartImage = chartCanvasEl.toDataURL('image/png', 1.0);
-                    const chartHeight = 80;
-                    if (y + chartHeight > pageHeight - margin) {
-                        pdf.addPage();
-                        y = margin;
-                    }
-                    pdf.addImage(chartImage, 'PNG', margin, y, 100, chartHeight);
-                    y += chartHeight + 10;
-                });
-
-                // Sección de Plan de Acción
-                addSection("3. Tu Plan de Acción Inicial", () => {
-                    recommendationsEl.querySelectorAll('div').forEach(rec => {
-                        const title = rec.querySelector('h4').innerText;
-                        const text = rec.querySelector('p').innerText;
-                        pdf.setFont(undefined, 'bold');
-                        addWrappedText(title);
-                        y += 2;
-                        pdf.setFont(undefined, 'normal');
-                        addWrappedText(text, { indent: 5 });
-                        y += 8;
-                    });
-                });
-                
-                // Sección de Inversión (Condicional)
-                if (state.investorProfile) {
-                    addSection("4. Estrategias de Inversión", () => {
-                        investmentRecommendationsEl.querySelectorAll('div').forEach(rec => {
-                            const title = rec.querySelector('h4').innerText;
-                            const text = rec.querySelector('p').innerText;
-                            pdf.setFont(undefined, 'bold');
-                            addWrappedText(title);
-                            y += 2;
-                            pdf.setFont(undefined, 'normal');
-                            addWrappedText(text, { indent: 5 });
-                            y += 8;
-                        });
-                    });
-                }
-                
-                pdf.save('Mi-Primer-Plan-Financiero.pdf');
-                exportButton.textContent = 'Mi Primer Plan Financiero (PDF)';
-            }
-
-            // --- INITIALIZATION ---
-            renderVariableExpenses();
-            updateDashboard();
-
-            // --- PWA Service Worker Registration ---
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then(registration => {
-      console.log('ServiceWorker registration successful with scope: ', registration.scope);
-    }, err => {
-      console.log('ServiceWorker registration failed: ', err);
-    });
-  });
-}
+            loadGoals();
         });
     </script>
 </body>
