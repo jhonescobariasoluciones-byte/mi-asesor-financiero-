@@ -130,7 +130,13 @@
             };
             
             const formatCurrency = (amount) => {
-                return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(amount);
+                const mainData = JSON.parse(localStorage.getItem('financieroData')) || {};
+                const currency = mainData.currency || 'COP';
+                const options = { style: 'currency', currency: currency, minimumFractionDigits: 0, maximumFractionDigits: 0 };
+                if (currency === 'USD') {
+                    options.minimumFractionDigits = 2;
+                }
+                return new Intl.NumberFormat('es-CO', options).format(amount);
             };
 
             const editGoal = (id) => {
@@ -204,12 +210,10 @@
             
             deleteGoalBtn.addEventListener('click', () => {
                 const id = document.getElementById('goal-id').value;
-                if (confirm('¿Estás seguro de que quieres eliminar esta meta?')) {
-                    goals = goals.filter(g => g.id != id);
-                    saveGoals();
-                    renderGoals();
-                    toggleModal(false);
-                }
+                goals = goals.filter(g => g.id != id);
+                saveGoals();
+                renderGoals();
+                toggleModal(false);
             });
 
             loadGoals();
