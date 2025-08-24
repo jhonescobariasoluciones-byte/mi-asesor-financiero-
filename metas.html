@@ -11,6 +11,13 @@
         body { font-family: 'Inter', sans-serif; }
         .goal-card { transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
         .goal-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); }
+        .saving-checkbox:checked + label { text-decoration: line-through; color: #16a34a; }
+        .saving-checkbox:checked + label svg { stroke: #16a34a; }
+        /* Estilo para hacer el modal scrollable en pantallas pequeñas */
+        #goal-modal > div {
+            max-height: 90vh;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -57,14 +64,24 @@
                             <label for="goal-saved" class="block text-sm font-medium text-slate-700">Ahorro Actual</label>
                             <input type="text" inputmode="decimal" id="goal-saved" placeholder="0" class="mt-1 block w-full p-2 border border-slate-300 rounded-md" required>
                         </div>
-                        <div class="p-3 bg-indigo-50 rounded-md">
-                            <label for="goal-monthly-saving" class="block text-sm font-medium text-indigo-800">Ahorro Mensual Programado</label>
-                            <p class="text-xs text-indigo-600 mb-2">¿Cuánto destinarás a esta meta cada mes?</p>
-                            <div id="cashflow-info" class="text-sm mb-2 hidden">
-                                Flujo de caja disponible: <strong id="available-cashflow"></strong> 
-                                <button type="button" id="assign-cashflow-btn" class="ml-2 text-xs text-indigo-600 font-semibold hover:underline">Asignar</button>
+                        <div class="p-3 bg-indigo-50 rounded-md grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="goal-saving-amount" class="block text-sm font-medium text-indigo-800">Monto de Ahorro</label>
+                                <div id="cashflow-info" class="text-xs text-indigo-600 mb-1 hidden">
+                                    Disponible: <strong id="available-cashflow"></strong> 
+                                    <button type="button" id="assign-cashflow-btn" class="ml-1 font-semibold hover:underline">Asignar</button>
+                                </div>
+                                <input type="text" inputmode="decimal" id="goal-saving-amount" placeholder="300.000" class="block w-full p-2 border border-slate-300 rounded-md" required>
                             </div>
-                            <input type="text" inputmode="decimal" id="goal-monthly-saving" placeholder="300.000" class="block w-full p-2 border border-slate-300 rounded-md" required>
+                            <div>
+                                <label for="goal-frequency" class="block text-sm font-medium text-indigo-800">Frecuencia</label>
+                                <p class="text-xs text-indigo-600 mb-1">¿Cada cuánto ahorrarás?</p>
+                                <select id="goal-frequency" class="block w-full p-2 border border-slate-300 rounded-md">
+                                    <option value="mensual">Mensual</option>
+                                    <option value="quincenal">Quincenal</option>
+                                    <option value="semanal">Semanal</option>
+                                </select>
+                            </div>
                         </div>
                         <div>
                             <label for="goal-image-upload" class="block text-sm font-medium text-slate-700">Imagen Inspiradora</label>
@@ -116,9 +133,16 @@
                 goals.forEach(goal => {
                     const percentage = goal.target > 0 ? (goal.saved / goal.target * 100) : 0;
                     const remaining = goal.target - goal.saved;
-                    let timeText = 'Define un ahorro mensual';
-                    if (goal.monthlySaving > 0 && remaining > 0) {
-                        const months = Math.ceil(remaining / goal.monthlySaving);
+                    let timeText = 'Define un ahorro';
+                    let monthlyEquivalentSaving = 0;
+                    if (goal.savingAmount > 0) {
+                        if(goal.frequency === 'semanal') monthlyEquivalentSaving = goal.savingAmount * 4;
+                        else if(goal.frequency === 'quincenal') monthlyEquivalentSaving = goal.savingAmount * 2;
+                        else monthlyEquivalentSaving = goal.savingAmount;
+                    }
+
+                    if (monthlyEquivalentSaving > 0 && remaining > 0) {
+                        const months = Math.ceil(remaining / monthlyEquivalentSaving);
                         const years = Math.floor(months / 12);
                         const remainingMonths = months % 12;
                         timeText = `Lo lograrás en aprox. `;
@@ -130,27 +154,75 @@
                     }
 
                     const card = document.createElement('div');
-                    card.className = 'goal-card bg-white rounded-lg shadow-md p-6 cursor-pointer flex flex-col';
+                    card.className = 'goal-card bg-white rounded-lg shadow-md p-6 flex flex-col';
                     card.dataset.id = goal.id;
                     
                     const placeholderImg = `https://placehold.co/600x400/e2e8f0/475569?text=${encodeURIComponent(goal.name)}`;
+                    const currentMonthName = new Date().toLocaleString('es-ES', { month: 'long' });
 
                     card.innerHTML = `
-                        <img src="${goal.image || placeholderImg}" onerror="this.src='${placeholderImg}'" alt="${goal.name}" class="w-full h-40 object-cover rounded-md mb-4">
-                        <h3 class="text-xl font-bold mb-2">${goal.name}</h3>
+                        <img src="${goal.image || placeholderImg}" onerror="this.src='${placeholderImg}'" alt="${goal.name}" class="w-full h-40 object-cover rounded-md mb-4 cursor-pointer" data-action="edit">
+                        <h3 class="text-xl font-bold mb-2 cursor-pointer" data-action="edit">${goal.name}</h3>
                         <div class="text-sm text-slate-600 mb-4">
                             <p><strong>Meta:</strong> ${formatCurrency(goal.target)}</p>
                             <p><strong>Ahorrado:</strong> ${formatCurrency(goal.saved)}</p>
-                            <p><strong>Ahorro Mensual:</strong> ${formatCurrency(goal.monthlySaving || 0)}</p>
+                            <p><strong>Ahorro ${goal.frequency || 'mensual'}:</strong> ${formatCurrency(goal.savingAmount || 0)}</p>
                         </div>
                         <div class="w-full bg-slate-200 rounded-full h-4">
                             <div class="bg-green-500 h-4 rounded-full text-center text-white text-xs font-semibold" style="width: ${percentage > 100 ? 100 : percentage}%">${percentage.toFixed(0)}%</div>
                         </div>
                         <p class="text-center text-xs text-indigo-600 font-semibold mt-2">${timeText}</p>
+                        <div class="mt-4 border-t pt-4">
+                            <h4 class="text-sm font-semibold text-center mb-2">Progreso de ${currentMonthName.charAt(0).toUpperCase() + currentMonthName.slice(1)}</h4>
+                            <div id="tracker-${goal.id}" class="flex justify-center gap-4"></div>
+                        </div>
                     `;
-                    card.addEventListener('click', () => editGoal(goal.id));
+                    
+                    card.querySelector('[data-action="edit"]').addEventListener('click', () => editGoal(goal.id));
                     goalsContainer.appendChild(card);
+                    renderTracker(goal);
                 });
+            };
+
+            const renderTracker = (goal) => {
+                const container = document.getElementById(`tracker-${goal.id}`);
+                if (!container) return;
+                container.innerHTML = '';
+                let periods = 0;
+                let periodLabel = '';
+                if(goal.frequency === 'semanal') { periods = 4; periodLabel = 'S'; }
+                else if (goal.frequency === 'quincenal') { periods = 2; periodLabel = 'Q'; }
+                else { periods = 1; periodLabel = 'Mes'; }
+
+                const now = new Date();
+                const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                const checkedPeriods = (goal.progress && goal.progress[currentMonthKey]) ? goal.progress[currentMonthKey] : 0;
+
+                for(let i = 1; i <= periods; i++) {
+                    const isChecked = i <= checkedPeriods;
+                    const trackerItem = document.createElement('div');
+                    trackerItem.innerHTML = `
+                        <input type="checkbox" id="chk-${goal.id}-${i}" class="saving-checkbox hidden" ${isChecked ? 'checked disabled' : ''}>
+                        <label for="chk-${goal.id}-${i}" class="flex flex-col items-center ${isChecked ? '' : 'cursor-pointer'} text-slate-500">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span class="text-xs">${periodLabel}${periods > 1 ? i : ''}</span>
+                        </label>
+                    `;
+                    const checkbox = trackerItem.querySelector('input');
+                    if (!isChecked) {
+                        checkbox.addEventListener('change', () => {
+                            if(checkbox.checked) {
+                                goal.saved += goal.savingAmount;
+                                if (!goal.progress) goal.progress = {};
+                                if (!goal.progress[currentMonthKey]) goal.progress[currentMonthKey] = 0;
+                                goal.progress[currentMonthKey]++;
+                                saveGoals();
+                                renderGoals();
+                            }
+                        });
+                    }
+                    container.appendChild(trackerItem);
+                }
             };
 
             const saveGoals = () => {
@@ -183,7 +255,8 @@
                     document.getElementById('goal-name').value = goal.name;
                     document.getElementById('goal-target').value = new Intl.NumberFormat('es-CO').format(goal.target);
                     document.getElementById('goal-saved').value = new Intl.NumberFormat('es-CO').format(goal.saved);
-                    document.getElementById('goal-monthly-saving').value = new Intl.NumberFormat('es-CO').format(goal.monthlySaving || 0);
+                    document.getElementById('goal-saving-amount').value = new Intl.NumberFormat('es-CO').format(goal.savingAmount || 0);
+                    document.getElementById('goal-frequency').value = goal.frequency || 'mensual';
                     
                     currentImage = goal.image;
                     if(currentImage) {
@@ -234,8 +307,9 @@
 
             assignCashflowBtn.addEventListener('click', () => {
                 const availableCashFlow = parseFloat(localStorage.getItem('availableCashFlow')) || 0;
-                const monthlySavingInput = document.getElementById('goal-monthly-saving');
+                const monthlySavingInput = document.getElementById('goal-saving-amount');
                 monthlySavingInput.value = new Intl.NumberFormat('es-CO').format(availableCashFlow);
+                document.getElementById('goal-frequency').value = 'mensual';
             });
 
             goalForm.addEventListener('submit', (e) => {
@@ -245,15 +319,17 @@
                     name: document.getElementById('goal-name').value,
                     target: parseFormattedNumber(document.getElementById('goal-target').value),
                     saved: parseFormattedNumber(document.getElementById('goal-saved').value),
-                    monthlySaving: parseFormattedNumber(document.getElementById('goal-monthly-saving').value),
+                    savingAmount: parseFormattedNumber(document.getElementById('goal-saving-amount').value),
+                    frequency: document.getElementById('goal-frequency').value,
                     image: currentImage,
                 };
 
                 if (id) {
                     const index = goals.findIndex(g => g.id == id);
-                    goals[index] = { ...goals[index], ...goalData };
+                    const existingProgress = goals[index].progress || {};
+                    goals[index] = { ...goals[index], ...goalData, progress: existingProgress };
                 } else {
-                    goals.push({ id: Date.now(), ...goalData });
+                    goals.push({ id: Date.now(), ...goalData, progress: {} });
                 }
                 
                 saveGoals();
@@ -269,7 +345,7 @@
                 toggleModal(false);
             });
             
-            ['goal-target', 'goal-saved', 'goal-monthly-saving'].forEach(id => {
+            ['goal-target', 'goal-saved', 'goal-saving-amount'].forEach(id => {
                 document.getElementById(id).addEventListener('input', formatInputAsNumber);
             });
 
