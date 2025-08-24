@@ -187,6 +187,14 @@
                                 <!-- Las recomendaciones se generarán aquí -->
                             </div>
 
+                            <div id="budget-cta-container" class="p-4 bg-green-100 text-center rounded-lg hidden">
+                                <h4 class="font-semibold text-green-800">¡Ahora, toma el control del próximo mes!</h4>
+                                <p class="text-sm text-green-700 mt-1">Usa tu diagnóstico para crear un presupuesto inteligente y decirle a tu dinero exactamente a dónde ir.</p>
+                                <a href="presupuesto.html" class="mt-4 inline-block bg-green-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-green-700 transition-colors">
+                                    Crear mi Presupuesto →
+                                </a>
+                            </div>
+
                             <div id="debts-cta-container" class="p-4 bg-red-100 text-center rounded-lg hidden">
                                 <h4 class="font-semibold text-red-800">Tu principal misión es conquistar tus deudas.</h4>
                                 <p class="text-sm text-red-700 mt-1">Usa nuestro centro de comando para crear un plan de batalla y visualizar tu camino hacia la libertad.</p>
@@ -252,6 +260,7 @@
             const healthStatusEl = document.getElementById('health-status');
             const healthMessageEl = document.getElementById('health-message');
             const detailedAnalysisEl = document.getElementById('detailed-analysis');
+            const budgetCtaContainer = document.getElementById('budget-cta-container');
             const debtsCtaContainer = document.getElementById('debts-cta-container');
             const goalsCtaContainer = document.getElementById('goals-cta-container'); 
             const investorProfileContainer = document.getElementById('investor-profile-container');
@@ -496,6 +505,7 @@
             
             function resetAllData() {
                 localStorage.removeItem('financieroData');
+                localStorage.removeItem('financialBudget'); // Clear budget data as well
                 document.querySelectorAll('.data-input').forEach(input => input.value = '');
                 const dynamicIncomes = incomesContainer.querySelectorAll('div:not(:first-child)');
                 dynamicIncomes.forEach(div => div.remove());
@@ -513,8 +523,9 @@
                 recommendationsEl.classList.add('hidden');
                 investmentRecommendationsEl.classList.add('hidden');
                 exportPdfBtn.classList.add('hidden');
-                goalsCtaContainer.classList.add('hidden');
+                goalsCtaContainer.classList.add('hidden'); 
                 debtsCtaContainer.classList.add('hidden');
+                budgetCtaContainer.classList.add('hidden');
                 state.currentDiagnosis = null;
                 state.investorProfile = null;
             }
@@ -577,6 +588,7 @@
                 recommendationsEl.classList.remove('hidden');
 
                 showGoalsCta(status, cashFlow);
+                budgetCtaContainer.classList.remove('hidden');
 
                 if (status === 'Crítica' || status === 'En Riesgo') {
                     debtsCtaContainer.classList.remove('hidden');
