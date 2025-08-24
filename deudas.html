@@ -82,12 +82,15 @@
                 
                 <div id="extra-payment-booster" class="bg-white p-6 rounded-lg shadow-md hidden">
                     <h2 class="text-xl font-semibold mb-2 text-center">🚀 ¡El Botón de la Victoria! 🚀</h2>
-                    <p class="text-sm text-slate-600 mb-4 text-center">¿Hiciste un pago extra este mes? ¡Regístralo aquí y mira cómo se acelera tu libertad!</p>
+                    <p class="text-sm text-slate-600 mb-4 text-center">¿Tienes un dinero extra? ¡Regístralo aquí y te diremos cómo usarlo!</p>
                     <div class="flex items-center gap-4">
                         <input type="text" id="one-time-payment" placeholder="Monto del abono" class="flex-1 p-2 border border-slate-300 rounded-md">
-                        <button id="apply-extra-payment-btn" class="bg-orange-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-orange-600">¡Aboné Extra!</button>
+                        <button id="suggest-extra-payment-btn" class="bg-orange-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-orange-600">Sugerir Abono</button>
                     </div>
-                    <p id="booster-feedback" class="text-center text-green-600 font-semibold mt-2"></p>
+                    <div id="booster-feedback" class="text-center bg-blue-100 text-blue-800 p-3 rounded-lg mt-4 hidden">
+                        <p id="booster-text" class="font-semibold"></p>
+                        <button id="confirm-extra-payment-btn" class="mt-2 bg-blue-600 text-white text-sm font-bold py-1 px-3 rounded-lg hover:bg-blue-700">¡Listo, lo aboné!</button>
+                    </div>
                 </div>
 
                 <div id="payment-plan-container" class="bg-white p-6 rounded-lg shadow-md hidden">
@@ -130,6 +133,7 @@
             let debts = [];
             let snowballPlan = {};
             let avalanchePlan = {};
+            let recommendedStrategy = '';
             
             // DOM Elements
             const debtsListEl = document.getElementById('debts-list');
@@ -155,8 +159,10 @@
             
             const extraPaymentBoosterEl = document.getElementById('extra-payment-booster');
             const oneTimePaymentInput = document.getElementById('one-time-payment');
-            const applyExtraPaymentBtn = document.getElementById('apply-extra-payment-btn');
+            const suggestExtraPaymentBtn = document.getElementById('suggest-extra-payment-btn');
             const boosterFeedbackEl = document.getElementById('booster-feedback');
+            const boosterTextEl = document.getElementById('booster-text');
+            const confirmExtraPaymentBtn = document.getElementById('confirm-extra-payment-btn');
 
             const paymentPlanContainer = document.getElementById('payment-plan-container');
             const planStrategyNameEl = document.getElementById('plan-strategy-name');
@@ -366,11 +372,13 @@
                     snowballBadge.classList.remove('hidden');
                     snowballCard.classList.add('recommended');
                     renderPaymentPlan(snowballPlan);
+                    recommendedStrategy = 'snowball';
                 } else {
                     recommendation = 'Recomendamos <strong>Avalancha</strong>. Es la estrategia matemáticamente superior y te ahorrará la mayor cantidad de dinero en intereses.';
                     avalancheBadge.classList.remove('hidden');
                     avalancheCard.classList.add('recommended');
                     renderPaymentPlan(avalanchePlan);
+                    recommendedStrategy = 'avalanche';
                 }
                 recommendationTextEl.innerHTML = recommendation;
                 recommendationTextEl.classList.remove('hidden');
@@ -388,33 +396,53 @@
             snowballCard.addEventListener('click', () => renderPaymentPlan(snowballPlan));
             avalancheCard.addEventListener('click', () => renderPaymentPlan(avalanchePlan));
             
-            applyExtraPaymentBtn.addEventListener('click', () => {
+            suggestExtraPaymentBtn.addEventListener('click', () => {
                 const oneTimePayment = parseFormattedNumber(oneTimePaymentInput.value);
                 if (oneTimePayment <= 0) return;
 
-                const originalMonths = snowballPlan.months;
-                let tempDebts = JSON.parse(JSON.stringify(debts));
-                
-                // Apply payment to the first debt in the snowball order
-                tempDebts.sort((a,b) => a.balance - b.balance);
-                const targetDebt = tempDebts.find(d => d.balance > 0);
-                if(targetDebt) {
-                    targetDebt.balance -= oneTimePayment;
+                let targetDebt;
+                if (recommendedStrategy === 'snowball') {
+                    targetDebt = [...debts].filter(d => d.balance > 0).sort((a,b) => a.balance - b.balance)[0];
+                } else { // avalanche
+                    targetDebt = [...debts].filter(d => d.balance > 0).sort((a,b) => b.rate - a.rate)[0];
                 }
 
-                const newPlan = runSimulation('snowball', tempDebts);
-                const monthsSaved = originalMonths - newPlan.months;
+                if (targetDebt) {
+                    boosterTextEl.innerHTML = `¡Perfecto! Para seguir la estrategia <strong>${recommendedStrategy === 'snowball' ? 'Bola de Nieve' : 'Avalancha'}</strong>, abona estos <strong>${formatCurrency(oneTimePayment)}</strong> a tu deuda "<strong>${targetDebt.name}</strong>".`;
+                    boosterFeedbackEl.classList.remove('hidden');
+                }
+            });
+
+            confirmExtraPaymentBtn.addEventListener('click', () => {
+                const oneTimePayment = parseFormattedNumber(oneTimePaymentInput.value);
+                if (oneTimePayment <= 0) return;
+
+                const originalMonths = recommendedStrategy === 'snowball' ? snowballPlan.months : avalanchePlan.months;
                 
-                boosterFeedbackEl.textContent = `¡Felicidades! Acabas de acortar tu camino a la libertad en ${monthsSaved} mes(es).`;
-                setTimeout(() => boosterFeedbackEl.textContent = '', 4000);
-                
-                // Update main debts array, save and re-render everything
-                const originalDebt = debts.find(d => d.id === targetDebt.id);
-                originalDebt.balance -= oneTimePayment;
-                saveDebts();
-                renderDebtsList();
-                calculatePlanBtn.click();
-                oneTimePaymentInput.value = '';
+                let targetDebt;
+                if (recommendedStrategy === 'snowball') {
+                    targetDebt = [...debts].filter(d => d.balance > 0).sort((a,b) => a.balance - b.balance)[0];
+                } else { // avalanche
+                    targetDebt = [...debts].filter(d => d.balance > 0).sort((a,b) => b.rate - a.rate)[0];
+                }
+
+                if (targetDebt) {
+                    const originalDebt = debts.find(d => d.id === targetDebt.id);
+                    originalDebt.balance -= oneTimePayment;
+                    
+                    const newPlan = runSimulation(recommendedStrategy, debts);
+                    const monthsSaved = originalMonths - newPlan.months;
+                    
+                    boosterFeedbackEl.innerHTML = `<p class="text-green-600 font-bold">¡Felicidades! Acabas de acortar tu camino a la libertad en ${monthsSaved} mes(es).</p>`;
+                    setTimeout(() => {
+                        boosterFeedbackEl.classList.add('hidden');
+                        oneTimePaymentInput.value = '';
+                    }, 4000);
+                    
+                    saveDebts();
+                    renderDebtsList();
+                    calculatePlanBtn.click();
+                }
             });
 
             ['debt-balance', 'debt-min-payment', 'extra-payment', 'one-time-payment'].forEach(id => {
