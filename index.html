@@ -550,7 +550,7 @@
                 financialHealthEl.classList.add('hidden');
                 detailedAnalysisEl.classList.add('hidden');
                 recommendationsEl.classList.add('hidden');
-                actionPathContainer.innerHTML = ''; // Clear the action path
+                actionPathContainer.innerHTML = '';
                 exportPdfBtn.classList.add('hidden');
                 state.currentDiagnosis = null;
                 state.investorProfile = null;
@@ -618,7 +618,7 @@
             }
             
             function showActionPath(status, cashFlow) {
-                actionPathContainer.innerHTML = ''; // Clear previous path
+                actionPathContainer.innerHTML = '';
 
                 const ctaTemplates = {
                     progress: document.getElementById('progress-cta-template'),
@@ -634,12 +634,10 @@
                     actionPathContainer.appendChild(clone);
                 };
 
-                // Show progress CTA if history exists
                 if (Object.keys(JSON.parse(localStorage.getItem('financieroDataHistory')) || {}).length > 1) {
                     appendCta(ctaTemplates.progress);
                 }
 
-                // Define paths
                 const paths = {
                     'Crítica': ['debts', 'budget', 'goals'],
                     'En Riesgo': ['budget', 'debts', 'goals'],
@@ -651,14 +649,13 @@
                 currentPath.forEach(ctaKey => {
                     if (ctaKey === 'goals') {
                         appendCta(ctaTemplates.goals);
-                        showGoalsCta(status, cashFlow); // Populate dynamic content
+                        showGoalsCta(status, cashFlow);
                     } else if (ctaKey === 'investor') {
                         appendCta(ctaTemplates.investor);
-                        const investorContainer = actionPathContainer.querySelector('#investor-profile-container');
-                        investorContainer.addEventListener('click', (e) => {
+                        actionPathContainer.querySelector('#investor-profile-container').addEventListener('click', (e) => {
                             if (e.target.classList.contains('profile-btn')) {
                                 state.investorProfile = e.target.dataset.profile;
-                                investorContainer.classList.add('hidden');
+                                actionPathContainer.querySelector('#investor-profile-container').classList.add('hidden');
                                 showInvestmentPlan();
                             }
                         });
