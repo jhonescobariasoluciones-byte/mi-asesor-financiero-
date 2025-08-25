@@ -145,8 +145,12 @@
                                 <span class="font-medium">Gastos Totales:</span>
                                 <span id="total-expenses" class="font-bold text-lg text-red-600">0</span>
                             </div>
+                            <div class="flex justify-between items-center p-3 bg-indigo-100 rounded-md">
+                                <span class="font-medium text-indigo-800">Ahorro Programado (Metas)</span>
+                                <span id="allocated-savings" class="font-bold text-lg text-indigo-800">0</span>
+                            </div>
                             <div class="flex justify-between items-center p-4 bg-slate-200 rounded-md">
-                                <span class="font-semibold text-lg">Flujo de Caja Mensual:</span>
+                                <span class="font-semibold text-lg">Flujo de Caja Real:</span>
                                 <span id="cash-flow" class="font-extrabold text-2xl">0</span>
                             </div>
                         </div>
@@ -272,6 +276,7 @@
             const variableExpensesList = document.getElementById('variable-expenses-list');
             const totalIncomeEl = document.getElementById('total-income');
             const totalExpensesEl = document.getElementById('total-expenses');
+            const allocatedSavingsEl = document.getElementById('allocated-savings');
             const cashFlowEl = document.getElementById('cash-flow');
             
             // Diagnosis Section Elements
@@ -503,7 +508,11 @@
 
                 const totalVariableExpenses = state.variableExpenses.reduce((sum, exp) => sum + exp.amount, 0);
                 const totalExpenses = totalFixedExpenses + totalVariableExpenses;
-                const cashFlow = totalIncome - totalExpenses;
+                
+                const allocatedSavings = parseFloat(localStorage.getItem('totalAllocatedSavings')) || 0;
+                allocatedSavingsEl.textContent = formatCurrency(allocatedSavings);
+
+                const cashFlow = totalIncome - totalExpenses - allocatedSavings;
 
                 totalIncomeEl.textContent = formatCurrency(totalIncome);
                 totalExpensesEl.textContent = formatCurrency(totalExpenses);
@@ -525,6 +534,8 @@
             function resetAllData() {
                 localStorage.removeItem('financieroDataHistory');
                 localStorage.removeItem('financialBudget');
+                localStorage.removeItem('financialGoals');
+                localStorage.removeItem('totalAllocatedSavings');
                 document.querySelectorAll('.data-input').forEach(input => input.value = '');
                 const dynamicIncomes = incomesContainer.querySelectorAll('div:not(:first-child)');
                 dynamicIncomes.forEach(div => div.remove());
@@ -561,7 +572,8 @@
                 document.querySelectorAll('.fixed-expense').forEach(input => totalFixedExpenses += parseFormattedNumber(input.value));
                 const totalVariableExpenses = state.variableExpenses.reduce((sum, exp) => sum + exp.amount, 0);
                 const totalExpenses = totalFixedExpenses + totalVariableExpenses;
-                const cashFlow = totalIncome - totalExpenses;
+                const allocatedSavings = parseFloat(localStorage.getItem('totalAllocatedSavings')) || 0;
+                const cashFlow = totalIncome - totalExpenses - allocatedSavings;
 
                 const savingPercentage = (cashFlow / totalIncome) * 100;
                 let status, message, bgColor, textColor;
@@ -602,7 +614,7 @@
                 generateInitialRecommendations(status, {totalIncome, ...state.currentDiagnosis});
                 recommendationsEl.classList.remove('hidden');
 
-                showActionPath(status, cashFlow);
+                showActionPath(status, totalIncome - totalExpenses); // Pass cashflow before goal savings
             }
             
             function showActionPath(status, cashFlow) {
@@ -665,7 +677,7 @@
                 if (!goalsContainer) return;
 
                 let ctaTitle, ctaText, ctaButtonText;
-                // ... (same switch logic as before) ...
+                
                  switch (status) {
                     case 'Crítica':
                         ctaTitle = 'Define tu "Porqué" para Salir Adelante';
