@@ -40,11 +40,23 @@
 </head>
 <body class="bg-slate-50 text-slate-800">
 
+    <!-- Welcome Modal -->
+    <div id="welcome-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md text-center">
+            <h2 class="text-2xl font-bold text-slate-900">¡Bienvenid@!</h2>
+            <p class="text-slate-600 mt-2 mb-4">Para personalizar tu experiencia, por favor dinos tu nombre.</p>
+            <form id="welcome-form">
+                <input type="text" id="user-name-input" placeholder="Escribe tu nombre aquí" class="w-full p-3 border border-slate-300 rounded-md text-center" required>
+                <button type="submit" class="mt-4 w-full bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors">Comenzar</button>
+            </form>
+        </div>
+    </div>
+
     <div class="container mx-auto p-4 md:p-8 max-w-7xl">
         
         <!-- Encabezado -->
         <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-slate-900">Panel de Salud Financiera</h1>
+            <h1 class="text-3xl md:text-4xl font-bold text-slate-900">Panel de <span id="user-name-header">Salud Financiera</span></h1>
             <p class="text-slate-600 mt-2">Analiza tus finanzas, entiende tus gastos y toma el control de tu dinero.</p>
         </header>
 
@@ -216,6 +228,12 @@
             </a>
         </div>
     </template>
+     <template id="progress-onboarding-template">
+        <div class="p-4 bg-blue-100 text-center rounded-lg">
+            <h4 class="font-semibold text-blue-800">¡Felicidades por dar el primer paso!</h4>
+            <p class="text-sm text-blue-700 mt-1">Hemos guardado la "foto" de tus finanzas de este mes. Vuelve el próximo mes para registrar tus nuevos datos y desbloquear tu Dashboard de Evolución Financiera.</p>
+        </div>
+    </template>
     <template id="budget-cta-template">
         <div id="budget-cta-container" class="p-4 bg-green-100 text-center rounded-lg">
             <h4 class="font-semibold text-green-800">¡Ahora, toma el control del próximo mes!</h4>
@@ -269,6 +287,10 @@
             let expenseChart = null;
 
             // --- DOM ELEMENTS ---
+            const welcomeModal = document.getElementById('welcome-modal');
+            const welcomeForm = document.getElementById('welcome-form');
+            const userNameInput = document.getElementById('user-name-input');
+            const userNameHeader = document.getElementById('user-name-header');
             const currencySelector = document.getElementById('currency');
             const incomesContainer = document.getElementById('incomes-container');
             const addIncomeBtn = document.getElementById('add-income');
@@ -292,6 +314,26 @@
             
             const chartCanvasEl = document.getElementById('expenses-chart');
             const chartCanvas = chartCanvasEl.getContext('2d');
+
+            // --- USER PERSONALIZATION ---
+            function loadUser() {
+                const userName = localStorage.getItem('userName');
+                if (!userName) {
+                    welcomeModal.classList.remove('hidden');
+                } else {
+                    userNameHeader.textContent = userName;
+                }
+            }
+
+            welcomeForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const userName = userNameInput.value.trim();
+                if (userName) {
+                    localStorage.setItem('userName', userName);
+                    userNameHeader.textContent = userName;
+                    welcomeModal.classList.add('hidden');
+                }
+            });
 
             // --- UTILITY FUNCTIONS ---
             const parseFormattedNumber = (value) => parseFloat(String(value).replace(/\./g, '')) || 0;
@@ -536,6 +578,7 @@
                 localStorage.removeItem('financialBudget');
                 localStorage.removeItem('financialGoals');
                 localStorage.removeItem('totalAllocatedSavings');
+                localStorage.removeItem('userName'); // Clear user name
                 document.querySelectorAll('.data-input').forEach(input => input.value = '');
                 const dynamicIncomes = incomesContainer.querySelectorAll('div:not(:first-child)');
                 dynamicIncomes.forEach(div => div.remove());
@@ -543,6 +586,7 @@
                 state.variableExpenses = [];
                 renderVariableExpenses();
                 updateDashboard();
+                location.reload(); // Reload to show welcome modal
             }
 
             function resetDiagnosisSection() {
@@ -622,6 +666,7 @@
 
                 const ctaTemplates = {
                     progress: document.getElementById('progress-cta-template'),
+                    progressOnboarding: document.getElementById('progress-onboarding-template'),
                     budget: document.getElementById('budget-cta-template'),
                     debts: document.getElementById('debts-cta-template'),
                     goals: document.getElementById('goals-cta-template'),
@@ -634,8 +679,11 @@
                     actionPathContainer.appendChild(clone);
                 };
 
-                if (Object.keys(JSON.parse(localStorage.getItem('financieroDataHistory')) || {}).length > 1) {
+                const historyLength = Object.keys(JSON.parse(localStorage.getItem('financieroDataHistory')) || {}).length;
+                if (historyLength > 1) {
                     appendCta(ctaTemplates.progress);
+                } else {
+                    appendCta(ctaTemplates.progressOnboarding);
                 }
 
                 const paths = {
@@ -890,6 +938,7 @@
             }
 
             // --- INITIALIZATION ---
+            loadUser();
             loadData();
             renderVariableExpenses();
             updateDashboard();
