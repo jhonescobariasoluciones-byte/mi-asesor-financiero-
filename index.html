@@ -187,6 +187,14 @@
                                 <!-- Las recomendaciones se generarán aquí -->
                             </div>
 
+                            <div id="progress-cta-container" class="p-4 bg-blue-100 text-center rounded-lg hidden">
+                                <h4 class="font-semibold text-blue-800">¡Tu esfuerzo está dando frutos!</h4>
+                                <p class="text-sm text-blue-700 mt-1">Hemos guardado tu historial. Visita tu dashboard de progreso para ver cómo tus decisiones están transformando tus finanzas.</p>
+                                <a href="progreso.html" class="mt-4 inline-block bg-blue-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-blue-700 transition-colors">
+                                    Ver mi Progreso Histórico →
+                                </a>
+                            </div>
+
                             <div id="budget-cta-container" class="p-4 bg-green-100 text-center rounded-lg hidden">
                                 <h4 class="font-semibold text-green-800">¡Ahora, toma el control del próximo mes!</h4>
                                 <p class="text-sm text-green-700 mt-1">Usa tu diagnóstico para crear un presupuesto inteligente y decirle a tu dinero exactamente a dónde ir.</p>
@@ -260,6 +268,7 @@
             const healthStatusEl = document.getElementById('health-status');
             const healthMessageEl = document.getElementById('health-message');
             const detailedAnalysisEl = document.getElementById('detailed-analysis');
+            const progressCtaContainer = document.getElementById('progress-cta-container');
             const budgetCtaContainer = document.getElementById('budget-cta-container');
             const debtsCtaContainer = document.getElementById('debts-cta-container');
             const goalsCtaContainer = document.getElementById('goals-cta-container'); 
@@ -534,6 +543,7 @@
                 goalsCtaContainer.classList.add('hidden'); 
                 debtsCtaContainer.classList.add('hidden');
                 budgetCtaContainer.classList.add('hidden');
+                progressCtaContainer.classList.add('hidden');
                 state.currentDiagnosis = null;
                 state.investorProfile = null;
             }
@@ -597,6 +607,10 @@
 
                 showGoalsCta(status, cashFlow);
                 budgetCtaContainer.classList.remove('hidden');
+
+                if (Object.keys(JSON.parse(localStorage.getItem('financieroDataHistory')) || {}).length > 1) {
+                    progressCtaContainer.classList.remove('hidden');
+                }
 
                 if (status === 'Crítica' || status === 'En Riesgo') {
                     debtsCtaContainer.classList.remove('hidden');
