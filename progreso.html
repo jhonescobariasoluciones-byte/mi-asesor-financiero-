@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Progreso Financiero</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-6xl">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-slate-900">Tu Evolución Financiera</h1>
+            <p class="text-slate-600 mt-2">Visualiza cómo tus decisiones están transformando tu futuro, mes a mes.</p>
+            <a href="index.html" class="text-indigo-600 font-semibold mt-4 inline-block hover:underline">← Volver al Diagnóstico</a>
+        </header>
+
+        <div id="progress-container" class="space-y-8">
+            <!-- Gráfico de Flujo de Caja -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold mb-4">Evolución de tu Flujo de Caja Mensual</h2>
+                <canvas id="cashflow-chart"></canvas>
+            </div>
+
+            <!-- Gráfico de Ingresos vs Gastos -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold mb-4">Evolución de Ingresos vs. Gastos</h2>
+                <canvas id="income-expense-chart"></canvas>
+            </div>
+
+            <!-- Gráfico de Distribución de Gastos -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold mb-4">Evolución de la Distribución de Gastos</h2>
+                <canvas id="spending-distribution-chart"></canvas>
+            </div>
+        </div>
+        
+        <div id="no-data-message" class="hidden text-center bg-white p-10 rounded-lg shadow-md">
+            <h2 class="text-2xl font-bold text-slate-800">¡Estás empezando tu viaje!</h2>
+            <p class="text-slate-600 mt-2">Usa el diagnosticador durante al menos dos meses para empezar a ver tu progreso aquí. ¡Sigue así!</p>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const allData = JSON.parse(localStorage.getItem('financieroDataHistory')) || {};
+            const keys = Object.keys(allData).sort();
+
+            if (keys.length < 2) {
+                document.getElementById('progress-container').classList.add('hidden');
+                document.getElementById('no-data-message').classList.remove('hidden');
+                return;
+            }
+
+            const labels = [];
+            const cashflowData = [];
+            const incomeData = [];
+            const expenseData = [];
+            const spendingByCategory = {};
+
+            const parseFormattedNumber = (value) => parseFloat(String(value).replace(/\./g, '')) || 0;
+
+            keys.forEach(key => {
+                const monthData = allData[key];
+                const [year, month] = key.split('-');
+                const date = new Date(year, month - 1);
+                labels.push(date.toLocaleString('es-ES', { month: 'short', year: 'numeric' }));
+
+                const totalIncome = monthData.incomes.reduce((sum, income) => sum + parseFormattedNumber(income), 0);
+                const totalFixed = monthData.fixedExpenses.reduce((sum, expense) => sum + parseFormattedNumber(expense), 0);
+                const totalVariable = monthData.variableExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+                const totalExpenses = totalFixed + totalVariable;
+                
+                incomeData.push(totalIncome);
+                expenseData.push(totalExpenses);
+                cashflowData.push(totalIncome - totalExpenses);
+
+                // For spending distribution
+                const allCategories = ['Arriendo / Hipoteca', 'Servicios (Agua, Luz, Gas)', 'Internet / Celular', 'Suscripciones', 'Alimentación', 'Transporte', 'Ocio y Entretenimiento', 'Educación', 'Salud', 'Ropa', 'Otros'];
+                
+                allCategories.forEach(cat => {
+                    if (!spendingByCategory[cat]) spendingByCategory[cat] = [];
+                });
+                
+                const fixedCategories = ['Arriendo / Hipoteca', 'Servicios (Agua, Luz, Gas)', 'Internet / Celular', 'Suscripciones'];
+                monthData.fixedExpenses.forEach((amount, index) => {
+                     const catName = fixedCategories[index];
+                     if(!spendingByCategory[catName]) spendingByCategory[catName] = Array(keys.length).fill(0);
+                     spendingByCategory[catName][labels.length - 1] = parseFormattedNumber(amount);
+                });
+
+                monthData.variableExpenses.forEach(expense => {
+                    if(!spendingByCategory[expense.category]) spendingByCategory[expense.category] = Array(keys.length).fill(0);
+                    spendingByCategory[expense.category][labels.length - 1] = (spendingByCategory[expense.category][labels.length - 1] || 0) + expense.amount;
+                });
+            });
+
+            // Chart 1: Cashflow
+            new Chart(document.getElementById('cashflow-chart'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Flujo de Caja',
+                        data: cashflowData,
+                        backgroundColor: cashflowData.map(v => v >= 0 ? 'rgba(22, 163, 74, 0.7)' : 'rgba(220, 38, 38, 0.7)'),
+                    }]
+                }
+            });
+
+            // Chart 2: Income vs. Expenses
+            new Chart(document.getElementById('income-expense-chart'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Ingresos',
+                            data: incomeData,
+                            borderColor: 'rgba(22, 163, 74, 1)',
+                            backgroundColor: 'rgba(22, 163, 74, 0.1)',
+                            fill: true,
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Gastos',
+                            data: expenseData,
+                            borderColor: 'rgba(220, 38, 38, 1)',
+                            backgroundColor: 'rgba(220, 38, 38, 0.1)',
+                            fill: true,
+                            tension: 0.1
+                        }
+                    ]
+                }
+            });
+            
+            // Chart 3: Spending Distribution
+            const categoryColors = ['#4F46E5', '#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#6366F1', '#D946EF', '#0EA5E9', '#6B7280'];
+            const spendingDatasets = Object.keys(spendingByCategory).map((category, index) => {
+                return {
+                    label: category,
+                    data: spendingByCategory[category],
+                    backgroundColor: categoryColors[index % categoryColors.length]
+                };
+            });
+
+            new Chart(document.getElementById('spending-distribution-chart'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: spendingDatasets
+                },
+                options: {
+                    scales: {
+                        x: { stacked: true },
+                        y: { stacked: true }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
