@@ -187,46 +187,8 @@
                                 <!-- Las recomendaciones se generarán aquí -->
                             </div>
 
-                            <div id="progress-cta-container" class="p-4 bg-blue-100 text-center rounded-lg hidden">
-                                <h4 class="font-semibold text-blue-800">¡Tu esfuerzo está dando frutos!</h4>
-                                <p class="text-sm text-blue-700 mt-1">Hemos guardado tu historial. Visita tu dashboard de progreso para ver cómo tus decisiones están transformando tus finanzas.</p>
-                                <a href="progreso.html" class="mt-4 inline-block bg-blue-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-blue-700 transition-colors">
-                                    Ver mi Progreso Histórico →
-                                </a>
-                            </div>
-
-                            <div id="budget-cta-container" class="p-4 bg-green-100 text-center rounded-lg hidden">
-                                <h4 class="font-semibold text-green-800">¡Ahora, toma el control del próximo mes!</h4>
-                                <p class="text-sm text-green-700 mt-1">Usa tu diagnóstico para crear un presupuesto inteligente y decirle a tu dinero exactamente a dónde ir.</p>
-                                <a href="presupuesto.html" class="mt-4 inline-block bg-green-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-green-700 transition-colors">
-                                    Crear mi Presupuesto →
-                                </a>
-                            </div>
-
-                            <div id="debts-cta-container" class="p-4 bg-red-100 text-center rounded-lg hidden">
-                                <h4 class="font-semibold text-red-800">Tu principal misión es conquistar tus deudas.</h4>
-                                <p class="text-sm text-red-700 mt-1">Usa nuestro centro de comando para crear un plan de batalla y visualizar tu camino hacia la libertad.</p>
-                                <a href="deudas.html" class="mt-4 inline-block bg-red-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-red-700 transition-colors">
-                                    Crear mi Plan Anti-Deudas →
-                                </a>
-                            </div>
-
-                            <div id="goals-cta-container" class="p-4 bg-indigo-100 text-center rounded-lg hidden">
-                                <!-- Contenido dinámico para el CTA de Metas -->
-                            </div>
-
-                            <div id="investor-profile-container" class="p-4 bg-slate-100 rounded-lg hidden">
-                                <h4 class="font-semibold text-center text-slate-800 mb-3">¿Listo para Invertir? Define tu Perfil</h4>
-                                <p class="text-center text-xs text-slate-600 mb-3">Tu elección determinará las estrategias de inversión recomendadas.</p>
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                    <button data-profile="conservador" class="profile-btn w-full bg-sky-600 text-white font-semibold py-2 px-3 rounded-md hover:bg-sky-700 transition-colors">Conservador</button>
-                                    <button data-profile="moderado" class="profile-btn w-full bg-amber-600 text-white font-semibold py-2 px-3 rounded-md hover:bg-amber-700 transition-colors">Moderado</button>
-                                    <button data-profile="agresivo" class="profile-btn w-full bg-red-600 text-white font-semibold py-2 px-3 rounded-md hover:bg-red-700 transition-colors">Agresivo</button>
-                                </div>
-                            </div>
-                            
-                            <div id="investment-recommendations" class="mt-4 space-y-4 text-sm text-slate-700 hidden">
-                                <!-- Las recomendaciones de inversión se generarán aquí -->
+                            <div id="action-path-container">
+                                <!-- Los CTAs se insertarán aquí en el orden correcto -->
                             </div>
                         </div>
                     </div>
@@ -239,6 +201,57 @@
             </div>
         </div>
     </div>
+    
+    <!-- Plantillas de los CTAs (ocultas) -->
+    <template id="progress-cta-template">
+        <div class="p-4 bg-blue-100 text-center rounded-lg">
+            <h4 class="font-semibold text-blue-800">¡Tu esfuerzo está dando frutos!</h4>
+            <p class="text-sm text-blue-700 mt-1">Hemos guardado tu historial. Visita tu dashboard de progreso para ver cómo tus decisiones están transformando tus finanzas.</p>
+            <a href="progreso.html" class="mt-4 inline-block bg-blue-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-blue-700 transition-colors">
+                Ver mi Progreso Histórico →
+            </a>
+        </div>
+    </template>
+    <template id="budget-cta-template">
+        <div class="p-4 bg-green-100 text-center rounded-lg">
+            <h4 class="font-semibold text-green-800">¡Ahora, toma el control del próximo mes!</h4>
+            <p class="text-sm text-green-700 mt-1">Usa tu diagnóstico para crear un presupuesto inteligente y decirle a tu dinero exactamente a dónde ir.</p>
+            <a href="presupuesto.html" class="mt-4 inline-block bg-green-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-green-700 transition-colors">
+                Crear mi Presupuesto →
+            </a>
+        </div>
+    </template>
+    <template id="debts-cta-template">
+         <div class="p-4 bg-red-100 text-center rounded-lg">
+            <h4 class="font-semibold text-red-800">Tu principal misión es conquistar tus deudas.</h4>
+            <p class="text-sm text-red-700 mt-1">Usa nuestro centro de comando para crear un plan de batalla y visualizar tu camino hacia la libertad.</p>
+            <a href="deudas.html" class="mt-4 inline-block bg-red-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-red-700 transition-colors">
+                Crear mi Plan Anti-Deudas →
+            </a>
+        </div>
+    </template>
+    <template id="goals-cta-template">
+        <div class="p-4 bg-indigo-100 text-center rounded-lg">
+            <h4 id="goals-cta-title" class="font-semibold text-indigo-800"></h4>
+            <p id="goals-cta-text" class="text-sm text-indigo-700 mt-1"></p>
+            <a href="metas.html" id="go-to-goals-btn" class="mt-4 inline-block bg-indigo-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-indigo-700 transition-colors"></a>
+        </div>
+    </template>
+     <template id="investor-profile-template">
+        <div class="p-4 bg-slate-100 rounded-lg">
+            <h4 class="font-semibold text-center text-slate-800 mb-3">¿Listo para Invertir? Define tu Perfil</h4>
+            <p class="text-center text-xs text-slate-600 mb-3">Tu elección determinará las estrategias de inversión recomendadas.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <button data-profile="conservador" class="profile-btn w-full bg-sky-600 text-white font-semibold py-2 px-3 rounded-md hover:bg-sky-700 transition-colors">Conservador</button>
+                <button data-profile="moderado" class="profile-btn w-full bg-amber-600 text-white font-semibold py-2 px-3 rounded-md hover:bg-amber-700 transition-colors">Moderado</button>
+                <button data-profile="agresivo" class="profile-btn w-full bg-red-600 text-white font-semibold py-2 px-3 rounded-md hover:bg-red-700 transition-colors">Agresivo</button>
+            </div>
+        </div>
+    </template>
+    <template id="investment-recommendations-template">
+        <div class="mt-4 space-y-4 text-sm text-slate-700"></div>
+    </template>
+
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -268,13 +281,8 @@
             const healthStatusEl = document.getElementById('health-status');
             const healthMessageEl = document.getElementById('health-message');
             const detailedAnalysisEl = document.getElementById('detailed-analysis');
-            const progressCtaContainer = document.getElementById('progress-cta-container');
-            const budgetCtaContainer = document.getElementById('budget-cta-container');
-            const debtsCtaContainer = document.getElementById('debts-cta-container');
-            const goalsCtaContainer = document.getElementById('goals-cta-container'); 
-            const investorProfileContainer = document.getElementById('investor-profile-container');
+            const actionPathContainer = document.getElementById('action-path-container');
             const recommendationsEl = document.getElementById('recommendations');
-            const investmentRecommendationsEl = document.getElementById('investment-recommendations');
             const exportPdfBtn = document.getElementById('export-pdf-btn');
             
             const chartCanvasEl = document.getElementById('expenses-chart');
@@ -402,12 +410,6 @@
             });
 
             diagnoseBtn.addEventListener('click', runDiagnosis);
-            investorProfileContainer.addEventListener('click', (e) => {
-                if (e.target.classList.contains('profile-btn')) {
-                    state.investorProfile = e.target.dataset.profile;
-                    showInvestmentPlan();
-                }
-            });
             resetBtn.addEventListener('click', resetAllData);
             exportPdfBtn.addEventListener('click', exportToPDF);
 
@@ -536,14 +538,9 @@
                 diagnoseBtn.classList.remove('hidden');
                 financialHealthEl.classList.add('hidden');
                 detailedAnalysisEl.classList.add('hidden');
-                investorProfileContainer.classList.add('hidden');
                 recommendationsEl.classList.add('hidden');
-                investmentRecommendationsEl.classList.add('hidden');
+                actionPathContainer.innerHTML = ''; // Clear the action path
                 exportPdfBtn.classList.add('hidden');
-                goalsCtaContainer.classList.add('hidden'); 
-                debtsCtaContainer.classList.add('hidden');
-                budgetCtaContainer.classList.add('hidden');
-                progressCtaContainer.classList.add('hidden');
                 state.currentDiagnosis = null;
                 state.investorProfile = null;
             }
@@ -605,30 +602,71 @@
                 generateInitialRecommendations(status, {totalIncome, ...state.currentDiagnosis});
                 recommendationsEl.classList.remove('hidden');
 
-                showGoalsCta(status, cashFlow);
-                budgetCtaContainer.classList.remove('hidden');
+                showActionPath(status, cashFlow);
+            }
+            
+            function showActionPath(status, cashFlow) {
+                actionPathContainer.innerHTML = ''; // Clear previous path
 
+                const ctaTemplates = {
+                    progress: document.getElementById('progress-cta-template'),
+                    budget: document.getElementById('budget-cta-template'),
+                    debts: document.getElementById('debts-cta-template'),
+                    goals: document.getElementById('goals-cta-template'),
+                    investor: document.getElementById('investor-profile-template'),
+                    investmentRecs: document.getElementById('investment-recommendations-template')
+                };
+
+                const appendCta = (template) => {
+                    const clone = template.content.cloneNode(true);
+                    actionPathContainer.appendChild(clone);
+                };
+
+                // Show progress CTA if history exists
                 if (Object.keys(JSON.parse(localStorage.getItem('financieroDataHistory')) || {}).length > 1) {
-                    progressCtaContainer.classList.remove('hidden');
+                    appendCta(ctaTemplates.progress);
                 }
 
+                // Define paths
+                const paths = {
+                    'Crítica': ['debts', 'budget', 'goals'],
+                    'En Riesgo': ['budget', 'debts', 'goals'],
+                    'Estable': ['goals', 'budget', 'investor'],
+                    'Saludable': ['goals', 'investor', 'budget']
+                };
+
+                const currentPath = paths[status];
+                currentPath.forEach(ctaKey => {
+                    if (ctaKey === 'goals') {
+                        appendCta(ctaTemplates.goals);
+                        showGoalsCta(status, cashFlow); // Populate dynamic content
+                    } else if (ctaKey === 'investor') {
+                        appendCta(ctaTemplates.investor);
+                        const investorContainer = actionPathContainer.querySelector('#investor-profile-container');
+                        investorContainer.addEventListener('click', (e) => {
+                            if (e.target.classList.contains('profile-btn')) {
+                                state.investorProfile = e.target.dataset.profile;
+                                investorContainer.classList.add('hidden');
+                                showInvestmentPlan();
+                            }
+                        });
+                    } else {
+                        appendCta(ctaTemplates[ctaKey]);
+                    }
+                });
+                
                 if (status === 'Crítica' || status === 'En Riesgo') {
-                    debtsCtaContainer.classList.remove('hidden');
-                }
-
-                if (status === 'Estable' || status === 'Saludable') {
-                    investorProfileContainer.classList.remove('hidden');
-                } else {
                     exportPdfBtn.classList.remove('hidden');
                 }
             }
-            
-            function showGoalsCta(status, cashFlow) {
-                let ctaTitle = '';
-                let ctaText = '';
-                let ctaButtonText = '';
 
-                switch (status) {
+            function showGoalsCta(status, cashFlow) {
+                const goalsContainer = actionPathContainer.querySelector('#goals-cta-container');
+                if (!goalsContainer) return;
+
+                let ctaTitle, ctaText, ctaButtonText;
+                // ... (same switch logic as before) ...
+                 switch (status) {
                     case 'Crítica':
                         ctaTitle = 'Define tu "Porqué" para Salir Adelante';
                         ctaText = 'Incluso en momentos difíciles, tener una meta clara te dará la fuerza para seguir. Crea un pequeño objetivo que te motive a dar el primer paso.';
@@ -639,23 +677,19 @@
                         ctaText = 'Estás a un paso de la estabilidad. Crear una meta convierte el ahorro de una obligación a una emocionante misión.';
                         ctaButtonText = 'Crear mi Primera Misión →';
                         break;
-                    default: // Estable y Saludable
+                    default:
                         ctaTitle = '¡Es Momento de Soñar en Grande!';
                         ctaText = 'Tienes un flujo de caja positivo. Es el momento perfecto para ponerle un nombre a tus sueños y empezar a construir tu futuro hoy.';
                         ctaButtonText = 'Crear mi Primera Meta →';
                         break;
                 }
 
-                goalsCtaContainer.innerHTML = `
-                    <h4 class="font-semibold text-indigo-800">${ctaTitle}</h4>
-                    <p class="text-sm text-indigo-700 mt-1">${ctaText}</p>
-                    <a href="metas.html" id="go-to-goals-btn" class="mt-4 inline-block bg-indigo-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-indigo-700 transition-colors">
-                        ${ctaButtonText}
-                    </a>
-                `;
-                goalsCtaContainer.classList.remove('hidden');
+                goalsContainer.querySelector('#goals-cta-title').textContent = ctaTitle;
+                goalsContainer.querySelector('#goals-cta-text').textContent = ctaText;
+                const goalsBtn = goalsContainer.querySelector('#go-to-goals-btn');
+                goalsBtn.textContent = ctaButtonText;
                 
-                document.getElementById('go-to-goals-btn').addEventListener('click', () => {
+                goalsBtn.addEventListener('click', () => {
                     if (cashFlow > 0) {
                         localStorage.setItem('availableCashFlow', cashFlow);
                     } else {
@@ -667,10 +701,9 @@
             function showInvestmentPlan() {
                 if (!state.currentDiagnosis || !state.investorProfile) return;
                 
-                generateInvestmentRecommendations(state.investorProfile);
-
-                investorProfileContainer.classList.add('hidden');
-                investmentRecommendationsEl.classList.remove('hidden');
+                const investmentContainer = document.importNode(document.getElementById('investment-recommendations-template').content, true).firstElementChild;
+                actionPathContainer.appendChild(investmentContainer);
+                generateInvestmentRecommendations(state.investorProfile, investmentContainer);
                 exportPdfBtn.classList.remove('hidden');
             }
 
@@ -738,10 +771,10 @@
                 }
             }
             
-            function generateInvestmentRecommendations(profile) {
-                investmentRecommendationsEl.innerHTML = '<h4 class="font-semibold text-xl text-slate-800 mb-2">Estrategias de Inversión Potentes</h4>';
+            function generateInvestmentRecommendations(profile, container) {
+                container.innerHTML = '<h4 class="font-semibold text-xl text-slate-800 mb-2">Estrategias de Inversión Potentes</h4>';
                 const addRecommendation = (title, text) => {
-                    investmentRecommendationsEl.innerHTML += `
+                    container.innerHTML += `
                         <div class="p-3 bg-slate-50 rounded-md border-l-4 border-green-500">
                             <h4 class="font-semibold text-slate-900">${title}</h4>
                             <p class="mt-1">${text}</p>
@@ -834,7 +867,7 @@
                 
                 if (state.investorProfile) {
                     addSection("4. Estrategias de Inversión", () => {
-                        investmentRecommendationsEl.querySelectorAll('div').forEach(rec => {
+                        actionPathContainer.querySelector('#investment-recommendations').querySelectorAll('div').forEach(rec => {
                             const title = rec.querySelector('h4').innerText;
                             const text = rec.querySelector('p').innerText;
                             pdf.setFont(undefined, 'bold'); addWrappedText(title); y += 2;
