@@ -43,8 +43,8 @@
             <!-- Cabeceras de las Categorías -->
             <div class="grid grid-cols-3 items-center gap-4 px-2 pb-2 border-b-2 font-bold text-slate-600">
                 <span class="col-span-1">Categoría</span>
-                <span class="text-right">Gasto Reciente</span>
-                <span class="text-right">Nuevo Presupuesto</span>
+                <span id="recent-expense-month" class="text-right">Gasto Reciente</span>
+                <span id="new-budget-month" class="text-right">Nuevo Presupuesto</span>
             </div>
 
             <!-- Categorías del Presupuesto -->
@@ -67,6 +67,8 @@
             const budgetCategoriesEl = document.getElementById('budget-categories');
             const suggestBudgetBtn = document.getElementById('suggest-budget-btn');
             const saveBudgetBtn = document.getElementById('save-budget-btn');
+            const recentExpenseMonthEl = document.getElementById('recent-expense-month');
+            const newBudgetMonthEl = document.getElementById('new-budget-month');
 
             let totalIncome = 0;
             let currency = 'COP';
@@ -119,8 +121,12 @@
                 const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
                 const lastMonthKey = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, '0')}`;
                 
-                // Prioritize last month's data, but fall back to current month's data if it doesn't exist
-                return allData[lastMonthKey] || allData[currentMonthKey] || {};
+                const data = allData[lastMonthKey] || allData[currentMonthKey] || {};
+                const monthName = allData[lastMonthKey] 
+                    ? lastMonthDate.toLocaleString('es-ES', { month: 'long' }) 
+                    : now.toLocaleString('es-ES', { month: 'long' });
+
+                return { data, monthName };
             };
 
             const loadData = () => {
@@ -129,7 +135,7 @@
                 const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
                 const currentDiagnosticData = allData[currentMonthKey] || {};
                 
-                const suggestionData = getSuggestionData();
+                const { data: suggestionData, monthName: recentMonthName } = getSuggestionData();
                 const savedBudget = JSON.parse(localStorage.getItem('financialBudget')) || {};
 
                 currency = currentDiagnosticData.currency || 'COP';
@@ -138,6 +144,12 @@
                     totalIncome = currentDiagnosticData.incomes.reduce((sum, income) => sum + parseFormattedNumber(income), 0);
                 }
                 summaryIncomeEl.textContent = formatCurrency(totalIncome);
+
+                // Update headers
+                const nextMonthDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+                const nextMonthName = nextMonthDate.toLocaleString('es-ES', { month: 'long' });
+                recentExpenseMonthEl.textContent = `Gastos de ${recentMonthName.charAt(0).toUpperCase() + recentMonthName.slice(1)}`;
+                newBudgetMonthEl.textContent = `Presupuesto ${nextMonthName.charAt(0).toUpperCase() + nextMonthName.slice(1)}`;
 
                 // Calculate past expenses from suggestion data
                 const pastExpenses = {};
@@ -159,7 +171,7 @@
             };
 
             suggestBudgetBtn.addEventListener('click', () => {
-                const suggestionData = getSuggestionData();
+                const { data: suggestionData } = getSuggestionData();
 
                 if (!suggestionData.incomes) {
                     alert('No hay datos de gastos recientes para hacer una sugerencia. Por favor, usa el diagnosticador primero.');
