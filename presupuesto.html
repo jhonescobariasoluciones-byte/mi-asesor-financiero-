@@ -37,13 +37,13 @@
             </div>
 
             <div class="flex justify-center mb-6">
-                <button id="suggest-budget-btn" class="bg-yellow-500 text-yellow-900 font-semibold py-2 px-4 rounded-lg hover:bg-yellow-600 transition-colors">Sugerir Presupuesto (Basado en el mes anterior)</button>
+                <button id="suggest-budget-btn" class="bg-yellow-500 text-yellow-900 font-semibold py-2 px-4 rounded-lg hover:bg-yellow-600 transition-colors">Sugerir Presupuesto (Basado en gastos recientes)</button>
             </div>
 
             <!-- Cabeceras de las Categorías -->
             <div class="grid grid-cols-3 items-center gap-4 px-2 pb-2 border-b-2 font-bold text-slate-600">
                 <span class="col-span-1">Categoría</span>
-                <span class="text-right">Gasto Anterior</span>
+                <span class="text-right">Gasto Reciente</span>
                 <span class="text-right">Nuevo Presupuesto</span>
             </div>
 
@@ -112,17 +112,26 @@
                 budgetCategoriesEl.appendChild(div);
             };
 
-            const loadData = () => {
+            const getSuggestionData = () => {
                 const allData = JSON.parse(localStorage.getItem('financieroDataHistory')) || {};
                 const now = new Date();
                 const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
                 const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
                 const lastMonthKey = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, '0')}`;
                 
+                // Prioritize last month's data, but fall back to current month's data if it doesn't exist
+                return allData[lastMonthKey] || allData[currentMonthKey] || {};
+            };
+
+            const loadData = () => {
+                const allData = JSON.parse(localStorage.getItem('financieroDataHistory')) || {};
+                const now = new Date();
+                const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
                 const currentDiagnosticData = allData[currentMonthKey] || {};
-                const lastMonthDiagnosticData = allData[lastMonthKey] || {};
-                const savedBudget = JSON.parse(localStorage.getItem('financialBudget')) || {};
                 
+                const suggestionData = getSuggestionData();
+                const savedBudget = JSON.parse(localStorage.getItem('financialBudget')) || {};
+
                 currency = currentDiagnosticData.currency || 'COP';
                 
                 if (currentDiagnosticData.incomes) {
@@ -130,13 +139,13 @@
                 }
                 summaryIncomeEl.textContent = formatCurrency(totalIncome);
 
-                // Calculate past expenses from last month
+                // Calculate past expenses from suggestion data
                 const pastExpenses = {};
                 const fixedCategories = ['Arriendo / Hipoteca', 'Servicios (Agua, Luz, Gas)', 'Internet / Celular', 'Suscripciones'];
-                (lastMonthDiagnosticData.fixedExpenses || []).forEach((amount, index) => {
+                (suggestionData.fixedExpenses || []).forEach((amount, index) => {
                     pastExpenses[fixedCategories[index]] = parseFormattedNumber(amount);
                 });
-                (lastMonthDiagnosticData.variableExpenses || []).forEach(expense => {
+                (suggestionData.variableExpenses || []).forEach(expense => {
                     pastExpenses[expense.category] = (pastExpenses[expense.category] || 0) + expense.amount;
                 });
 
@@ -150,23 +159,19 @@
             };
 
             suggestBudgetBtn.addEventListener('click', () => {
-                const allData = JSON.parse(localStorage.getItem('financieroDataHistory')) || {};
-                const now = new Date();
-                const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-                const lastMonthKey = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, '0')}`;
-                const diagnosticData = allData[lastMonthKey];
+                const suggestionData = getSuggestionData();
 
-                if (!diagnosticData) {
-                    alert('No hay datos del mes anterior para hacer una sugerencia. Por favor, usa el diagnosticador primero.');
+                if (!suggestionData.incomes) {
+                    alert('No hay datos de gastos recientes para hacer una sugerencia. Por favor, usa el diagnosticador primero.');
                     return;
                 }
 
                 const pastExpenses = {};
                 const fixedCategories = ['Arriendo / Hipoteca', 'Servicios (Agua, Luz, Gas)', 'Internet / Celular', 'Suscripciones'];
-                (diagnosticData.fixedExpenses || []).forEach((amount, index) => {
+                (suggestionData.fixedExpenses || []).forEach((amount, index) => {
                     pastExpenses[fixedCategories[index]] = parseFormattedNumber(amount);
                 });
-                (diagnosticData.variableExpenses || []).forEach(expense => {
+                (suggestionData.variableExpenses || []).forEach(expense => {
                     pastExpenses[expense.category] = (pastExpenses[expense.category] || 0) + expense.amount;
                 });
 
