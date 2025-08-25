@@ -40,8 +40,15 @@
                 <button id="suggest-budget-btn" class="bg-yellow-500 text-yellow-900 font-semibold py-2 px-4 rounded-lg hover:bg-yellow-600 transition-colors">Sugerir Presupuesto (Basado en el mes anterior)</button>
             </div>
 
+            <!-- Cabeceras de las Categorías -->
+            <div class="grid grid-cols-3 items-center gap-4 px-2 pb-2 border-b-2 font-bold text-slate-600">
+                <span class="col-span-1">Categoría</span>
+                <span class="text-right">Gasto Anterior</span>
+                <span class="text-right">Nuevo Presupuesto</span>
+            </div>
+
             <!-- Categorías del Presupuesto -->
-            <div id="budget-categories" class="space-y-4">
+            <div id="budget-categories" class="space-y-2 mt-2">
                 <!-- Las categorías se insertarán aquí dinámicamente -->
             </div>
 
@@ -93,53 +100,76 @@
                 summaryRemainingEl.classList.toggle('text-red-600', remaining < 0);
             };
 
-            const createCategoryInput = (category, amount = 0) => {
+            const createCategoryInput = (category, currentAmount = 0, previousAmount = 0) => {
                 const div = document.createElement('div');
-                div.className = 'grid grid-cols-2 items-center gap-4 p-2 border-b';
+                div.className = 'grid grid-cols-3 items-center gap-4 p-2 border-b';
                 div.innerHTML = `
-                    <label for="budget-${category.replace(/\s|\//g, '-')}" class="font-medium">${category}</label>
-                    <input type="text" id="budget-${category.replace(/\s|\//g, '-')}" data-category="${category}" value="${new Intl.NumberFormat('es-CO').format(amount)}" class="budget-input text-right p-2 border rounded-md">
+                    <label for="budget-${category.replace(/\s|\//g, '-')}" class="font-medium col-span-1">${category}</label>
+                    <span class="text-sm text-slate-500 text-right">${formatCurrency(previousAmount)}</span>
+                    <input type="text" id="budget-${category.replace(/\s|\//g, '-')}" data-category="${category}" value="${new Intl.NumberFormat('es-CO').format(currentAmount)}" class="budget-input text-right p-2 border rounded-md">
                 `;
                 div.querySelector('input').addEventListener('input', formatInputAsNumber);
                 budgetCategoriesEl.appendChild(div);
             };
 
             const loadData = () => {
-                const diagnosticData = JSON.parse(localStorage.getItem('financieroData')) || {};
-                const savedBudget = JSON.parse(localStorage.getItem('financialBudget')) || {};
-
-                currency = diagnosticData.currency || 'COP';
+                const allData = JSON.parse(localStorage.getItem('financieroDataHistory')) || {};
+                const now = new Date();
+                const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                const lastMonthKey = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, '0')}`;
                 
-                if (diagnosticData.incomes) {
-                    totalIncome = diagnosticData.incomes.reduce((sum, income) => sum + parseFormattedNumber(income), 0);
+                const currentDiagnosticData = allData[currentMonthKey] || {};
+                const lastMonthDiagnosticData = allData[lastMonthKey] || {};
+                const savedBudget = JSON.parse(localStorage.getItem('financialBudget')) || {};
+                
+                currency = currentDiagnosticData.currency || 'COP';
+                
+                if (currentDiagnosticData.incomes) {
+                    totalIncome = currentDiagnosticData.incomes.reduce((sum, income) => sum + parseFormattedNumber(income), 0);
                 }
                 summaryIncomeEl.textContent = formatCurrency(totalIncome);
 
+                // Calculate past expenses from last month
+                const pastExpenses = {};
+                const fixedCategories = ['Arriendo / Hipoteca', 'Servicios (Agua, Luz, Gas)', 'Internet / Celular', 'Suscripciones'];
+                (lastMonthDiagnosticData.fixedExpenses || []).forEach((amount, index) => {
+                    pastExpenses[fixedCategories[index]] = parseFormattedNumber(amount);
+                });
+                (lastMonthDiagnosticData.variableExpenses || []).forEach(expense => {
+                    pastExpenses[expense.category] = (pastExpenses[expense.category] || 0) + expense.amount;
+                });
+
                 categories.forEach(cat => {
                     const budgetAmount = savedBudget[cat] || 0;
-                    createCategoryInput(cat, budgetAmount);
+                    const previousAmount = pastExpenses[cat] || 0;
+                    createCategoryInput(cat, budgetAmount, previousAmount);
                 });
 
                 updateSummary();
             };
 
             suggestBudgetBtn.addEventListener('click', () => {
-                const diagnosticData = JSON.parse(localStorage.getItem('financieroData')) || {};
-                if (!diagnosticData.incomes) {
-                    alert('Primero debes registrar tus ingresos y gastos en el diagnosticador.');
+                const allData = JSON.parse(localStorage.getItem('financieroDataHistory')) || {};
+                const now = new Date();
+                const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                const lastMonthKey = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, '0')}`;
+                const diagnosticData = allData[lastMonthKey];
+
+                if (!diagnosticData) {
+                    alert('No hay datos del mes anterior para hacer una sugerencia. Por favor, usa el diagnosticador primero.');
                     return;
                 }
 
-                // Calculate past expenses
                 const pastExpenses = {};
+                const fixedCategories = ['Arriendo / Hipoteca', 'Servicios (Agua, Luz, Gas)', 'Internet / Celular', 'Suscripciones'];
                 (diagnosticData.fixedExpenses || []).forEach((amount, index) => {
-                    pastExpenses[categories[index]] = parseFormattedNumber(amount);
+                    pastExpenses[fixedCategories[index]] = parseFormattedNumber(amount);
                 });
                 (diagnosticData.variableExpenses || []).forEach(expense => {
                     pastExpenses[expense.category] = (pastExpenses[expense.category] || 0) + expense.amount;
                 });
 
-                // Populate inputs
                 document.querySelectorAll('.budget-input').forEach(input => {
                     const category = input.dataset.category;
                     const suggestedAmount = pastExpenses[category] || 0;
