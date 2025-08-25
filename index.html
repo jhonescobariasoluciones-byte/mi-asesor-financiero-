@@ -292,6 +292,9 @@
 
             // --- DATA PERSISTENCE FUNCTIONS ---
             function saveData() {
+                const now = new Date();
+                const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
                 const dataToSave = {
                     incomes: [],
                     fixedExpenses: [],
@@ -304,14 +307,19 @@
                 document.querySelectorAll('.fixed-expense').forEach(input => {
                     dataToSave.fixedExpenses.push(input.value);
                 });
-                localStorage.setItem('financieroData', JSON.stringify(dataToSave));
+
+                const allData = JSON.parse(localStorage.getItem('financieroDataHistory')) || {};
+                allData[currentMonthKey] = dataToSave;
+                localStorage.setItem('financieroDataHistory', JSON.stringify(allData));
             }
 
             function loadData() {
-                const savedData = localStorage.getItem('financieroData');
-                if (savedData) {
-                    const data = JSON.parse(savedData);
-                    
+                const allData = JSON.parse(localStorage.getItem('financieroDataHistory')) || {};
+                const now = new Date();
+                const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                const data = allData[currentMonthKey];
+
+                if (data) {
                     currencySelector.value = data.currency || 'COP';
                     state.currency = data.currency || 'COP';
 
@@ -504,8 +512,8 @@
             }
             
             function resetAllData() {
-                localStorage.removeItem('financieroData');
-                localStorage.removeItem('financialBudget'); // Clear budget data as well
+                localStorage.removeItem('financieroDataHistory');
+                localStorage.removeItem('financialBudget');
                 document.querySelectorAll('.data-input').forEach(input => input.value = '');
                 const dynamicIncomes = incomesContainer.querySelectorAll('div:not(:first-child)');
                 dynamicIncomes.forEach(div => div.remove());
