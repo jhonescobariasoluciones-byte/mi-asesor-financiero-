@@ -202,7 +202,7 @@
                 if (goal.frequency === 'semanal') {
                     periods = 4;
                     periodLabel = 'S';
-                    currentPeriod = Math.ceil(now.getDate() / 7.5); // Adjusted for better week distribution
+                    currentPeriod = Math.ceil(now.getDate() / 7.5); 
                 } else if (goal.frequency === 'quincenal') {
                     periods = 2;
                     periodLabel = 'Q';
@@ -257,6 +257,14 @@
 
             const saveGoals = () => {
                 localStorage.setItem('financialGoals', JSON.stringify(goals));
+                // Recalculate and save total allocated savings
+                let totalAllocated = 0;
+                goals.forEach(goal => {
+                    if(goal.frequency === 'semanal') totalAllocated += (goal.savingAmount || 0) * 4;
+                    else if (goal.frequency === 'quincenal') totalAllocated += (goal.savingAmount || 0) * 2;
+                    else totalAllocated += (goal.savingAmount || 0);
+                });
+                localStorage.setItem('totalAllocatedSavings', totalAllocated);
             };
 
             const loadGoals = () => {
@@ -268,8 +276,11 @@
             };
             
             const formatCurrency = (amount) => {
-                const mainData = JSON.parse(localStorage.getItem('financieroData')) || {};
-                const currency = mainData.currency || 'COP';
+                const mainData = JSON.parse(localStorage.getItem('financieroDataHistory')) || {};
+                const now = new Date();
+                const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                const dataForCurrentMonth = mainData[currentMonthKey] || {};
+                const currency = dataForCurrentMonth.currency || 'COP';
                 const options = { style: 'currency', currency: currency, minimumFractionDigits: 0, maximumFractionDigits: 0 };
                 if (currency === 'USD') {
                     options.minimumFractionDigits = 2;
