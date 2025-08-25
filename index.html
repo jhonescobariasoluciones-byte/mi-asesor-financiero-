@@ -262,7 +262,7 @@
      <template id="investor-profile-template">
         <div id="investor-profile-container" class="p-4 bg-slate-100 rounded-lg">
             <h4 class="font-semibold text-center text-slate-800 mb-3">¿Listo para Invertir? Define tu Perfil</h4>
-            <p class="text-center text-xs text-slate-600 mb-3">Tu elección determinará las estrategias de inversión recomendadas.</p>
+            <p class="text-center text-xs text-slate-600 mb-3">Tu elección determinará las estrategias. <a href="perfil-inversor.html" class="text-indigo-600 hover:underline font-semibold">¿No sabes cuál es tu perfil? Haz el test aquí.</a></p>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <button data-profile="conservador" class="profile-btn w-full bg-sky-600 text-white font-semibold py-2 px-3 rounded-md hover:bg-sky-700 transition-colors">Conservador</button>
                 <button data-profile="moderado" class="profile-btn w-full bg-amber-600 text-white font-semibold py-2 px-3 rounded-md hover:bg-amber-700 transition-colors">Moderado</button>
@@ -711,6 +711,16 @@
                         appendCta(ctaTemplates[ctaKey]);
                     }
                 });
+                
+                const profileFromQuiz = localStorage.getItem('investorProfileFromQuiz');
+                if (profileFromQuiz) {
+                    const investorContainer = actionPathContainer.querySelector('#investor-profile-container');
+                    if (investorContainer) {
+                        const btn = investorContainer.querySelector(`[data-profile="${profileFromQuiz}"]`);
+                        if (btn) btn.click();
+                    }
+                    localStorage.removeItem('investorProfileFromQuiz');
+                }
                 
                 if (status === 'Crítica' || status === 'En Riesgo') {
                     exportPdfBtn.classList.remove('hidden');
