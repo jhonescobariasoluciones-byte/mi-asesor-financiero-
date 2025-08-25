@@ -112,7 +112,7 @@
                 <!-- Card de Gastos Variables -->
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <h2 class="text-xl font-semibold mb-4 border-b pb-2">3. Gastos Variables Mensuales</h2>
-                    <form id="variable-expense-form" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
+                    <form id="variable-expense-form" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end mb-6">
                         <div class="md:col-span-2">
                             <label for="expense-desc" class="text-sm font-medium text-slate-700">Descripción</label>
                             <input type="text" id="expense-desc" placeholder="Mercado del mes" class="mt-1 block w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
@@ -135,8 +135,8 @@
                         </div>
                         <button type="submit" class="md:col-span-2 w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">Añadir Gasto</button>
                     </form>
-                    <div id="variable-expenses-list" class="mt-6">
-                        <!-- Los gastos variables se añadirán aquí -->
+                    <div id="variable-expenses-container" class="mt-6 space-y-4">
+                        <!-- El seguimiento del presupuesto se renderizará aquí -->
                     </div>
                 </div>
             </div>
@@ -295,7 +295,7 @@
             const incomesContainer = document.getElementById('incomes-container');
             const addIncomeBtn = document.getElementById('add-income');
             const variableExpenseForm = document.getElementById('variable-expense-form');
-            const variableExpensesList = document.getElementById('variable-expenses-list');
+            const variableExpensesContainer = document.getElementById('variable-expenses-container');
             const totalIncomeEl = document.getElementById('total-income');
             const totalExpensesEl = document.getElementById('total-expenses');
             const allocatedSavingsEl = document.getElementById('allocated-savings');
@@ -402,7 +402,6 @@
                     });
 
                     state.variableExpenses = data.variableExpenses || [];
-                    renderVariableExpenses();
                     updateDashboard();
                 }
             }
@@ -445,7 +444,6 @@
 
                 if (description && amount > 0) {
                     state.variableExpenses.push({ id: Date.now(), description, amount, category });
-                    renderVariableExpenses();
                     updateDashboard();
                     variableExpenseForm.reset();
                 }
@@ -461,38 +459,61 @@
             exportPdfBtn.addEventListener('click', exportToPDF);
 
             // --- RENDER FUNCTIONS ---
-            const renderVariableExpenses = () => {
-                variableExpensesList.innerHTML = state.variableExpenses.length === 0 
-                    ? `<p class="text-center text-sm text-slate-500">Aún no has añadido gastos variables.</p>` 
-                    : '';
-                if (state.variableExpenses.length > 0) {
-                    const list = document.createElement('ul');
-                    list.className = 'space-y-2';
-                    state.variableExpenses.forEach(expense => {
-                        const item = document.createElement('li');
-                        item.className = 'flex justify-between items-center bg-slate-50 p-2 rounded-md';
-                        item.innerHTML = `
-                            <div>
-                                <span class="font-medium">${expense.description}</span>
-                                <span class="text-xs text-slate-500 block">${expense.category}</span>
-                            </div>
-                            <div class="flex items-center gap-4">
-                               <span class="font-semibold">${formatCurrency(expense.amount)}</span>
-                               <button data-id="${expense.id}" class="remove-expense text-red-500 hover:text-red-700 text-2xl leading-none">&times;</button>
-                            </div>
-                        `;
-                        list.appendChild(item);
-                    });
-                    variableExpensesList.appendChild(list);
+            const renderBudgetTracker = () => {
+                variableExpensesContainer.innerHTML = '';
+                const budget = JSON.parse(localStorage.getItem('financialBudget')) || {};
+                const expensesByCategory = {};
 
-                    document.querySelectorAll('.remove-expense').forEach(button => {
-                        button.addEventListener('click', (e) => {
-                            const idToRemove = parseInt(e.target.dataset.id);
-                            state.variableExpenses = state.variableExpenses.filter(exp => exp.id !== idToRemove);
-                            renderVariableExpenses();
-                            updateDashboard();
-                        });
-                    });
+                state.variableExpenses.forEach(expense => {
+                    if (!expensesByCategory[expense.category]) {
+                        expensesByCategory[expense.category] = [];
+                    }
+                    expensesByCategory[expense.category].push(expense);
+                });
+
+                // Also include categories from budget that might not have expenses yet.
+                Object.keys(budget).forEach(category => {
+                    const fixedCategories = ['Arriendo / Hipoteca', 'Servicios (Agua, Luz, Gas)', 'Internet / Celular', 'Suscripciones'];
+                    if (!expensesByCategory[category] && budget[category] > 0 && !fixedCategories.includes(category)) {
+                        expensesByCategory[category] = [];
+                    }
+                });
+
+                if (Object.keys(expensesByCategory).length === 0) {
+                    variableExpensesContainer.innerHTML = `<p class="text-center text-sm text-slate-500">Aún no has añadido gastos variables.</p>`;
+                    return;
+                }
+
+                for (const category in expensesByCategory) {
+                    const categoryBudget = budget[category] || 0;
+                    const categoryExpenses = expensesByCategory[category];
+                    const totalSpent = categoryExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+                    const percentage = categoryBudget > 0 ? (totalSpent / categoryBudget * 100) : 0;
+                    const isOverBudget = percentage > 100;
+
+                    const categoryDiv = document.createElement('div');
+                    categoryDiv.className = 'mb-4';
+                    categoryDiv.innerHTML = `
+                        <div class="flex justify-between items-center mb-1">
+                            <h4 class="font-semibold">${category}</h4>
+                            <p class="text-sm ${isOverBudget ? 'text-red-600 font-bold' : 'text-slate-500'}">
+                                ${formatCurrency(totalSpent)} ${categoryBudget > 0 ? '/ ' + formatCurrency(categoryBudget) : ''}
+                            </p>
+                        </div>
+                        ${categoryBudget > 0 ? `
+                        <div class="w-full bg-slate-200 rounded-full h-2.5">
+                            <div class="${isOverBudget ? 'bg-red-600' : 'bg-green-600'} h-2.5 rounded-full" style="width: ${Math.min(percentage, 100)}%"></div>
+                        </div>` : ''}
+                        <ul class="mt-2 space-y-1 text-sm">
+                            ${categoryExpenses.map(exp => `
+                                <li class="flex justify-between items-center pl-4">
+                                    <span>${exp.description}</span>
+                                    <span>${formatCurrency(exp.amount)}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    `;
+                    variableExpensesContainer.appendChild(categoryDiv);
                 }
             };
             
@@ -568,6 +589,7 @@
                     expenseCategories[exp.category] = (expenseCategories[exp.category] || 0) + exp.amount;
                 });
                 renderChart(expenseCategories);
+                renderBudgetTracker();
 
                 resetDiagnosisSection();
                 saveData();
@@ -584,7 +606,6 @@
                 dynamicIncomes.forEach(div => div.remove());
                 variableExpenseForm.reset();
                 state.variableExpenses = [];
-                renderVariableExpenses();
                 updateDashboard();
                 location.reload(); // Reload to show welcome modal
             }
