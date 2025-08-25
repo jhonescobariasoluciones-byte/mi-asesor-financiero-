@@ -219,6 +219,15 @@
     </div>
     
     <!-- Plantillas de los CTAs (ocultas) -->
+    <template id="networth-cta-template">
+        <div id="networth-cta-container" class="p-4 bg-purple-100 text-center rounded-lg">
+            <h4 class="font-semibold text-purple-800">Mide lo que Realmente Importa</h4>
+            <p class="text-sm text-purple-700 mt-1">Tu flujo de caja es el motor, pero tu patrimonio neto es el destino. Descubre tu verdadera riqueza y mira cómo crece.</p>
+            <a href="patrimonio.html" class="mt-4 inline-block bg-purple-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-purple-700 transition-colors">
+                Calcular mi Patrimonio Neto →
+            </a>
+        </div>
+    </template>
     <template id="progress-cta-template">
         <div id="progress-cta-container" class="p-4 bg-blue-100 text-center rounded-lg">
             <h4 class="font-semibold text-blue-800">¡Tu esfuerzo está dando frutos!</h4>
@@ -692,7 +701,8 @@
                     debts: document.getElementById('debts-cta-template'),
                     goals: document.getElementById('goals-cta-template'),
                     investor: document.getElementById('investor-profile-template'),
-                    investmentRecs: document.getElementById('investment-recommendations-template')
+                    investmentRecs: document.getElementById('investment-recommendations-template'),
+                    networth: document.getElementById('networth-cta-template')
                 };
 
                 const appendCta = (template) => {
@@ -732,6 +742,8 @@
                         appendCta(ctaTemplates[ctaKey]);
                     }
                 });
+                
+                appendCta(ctaTemplates.networth);
                 
                 const profileFromQuiz = localStorage.getItem('investorProfileFromQuiz');
                 if (profileFromQuiz) {
@@ -971,7 +983,6 @@
             // --- INITIALIZATION ---
             loadUser();
             loadData();
-            renderVariableExpenses();
             updateDashboard();
         });
     </script>
