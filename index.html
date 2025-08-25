@@ -187,14 +187,14 @@
                                 <!-- Las recomendaciones se generarán aquí -->
                             </div>
 
-                            <div id="action-path-container">
+                            <div id="action-path-container" class="space-y-4">
                                 <!-- Los CTAs se insertarán aquí en el orden correcto -->
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <button id="export-pdf-btn" class="w-full bg-gray-800 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors text-lg hidden">
+                <button id="export-pdf-btn" class="w-full bg-gray-800 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors text-lg hidden mt-8">
                     Mi Primer Plan Financiero (PDF)
                 </button>
 
@@ -204,7 +204,7 @@
     
     <!-- Plantillas de los CTAs (ocultas) -->
     <template id="progress-cta-template">
-        <div class="p-4 bg-blue-100 text-center rounded-lg">
+        <div id="progress-cta-container" class="p-4 bg-blue-100 text-center rounded-lg">
             <h4 class="font-semibold text-blue-800">¡Tu esfuerzo está dando frutos!</h4>
             <p class="text-sm text-blue-700 mt-1">Hemos guardado tu historial. Visita tu dashboard de progreso para ver cómo tus decisiones están transformando tus finanzas.</p>
             <a href="progreso.html" class="mt-4 inline-block bg-blue-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-blue-700 transition-colors">
@@ -213,7 +213,7 @@
         </div>
     </template>
     <template id="budget-cta-template">
-        <div class="p-4 bg-green-100 text-center rounded-lg">
+        <div id="budget-cta-container" class="p-4 bg-green-100 text-center rounded-lg">
             <h4 class="font-semibold text-green-800">¡Ahora, toma el control del próximo mes!</h4>
             <p class="text-sm text-green-700 mt-1">Usa tu diagnóstico para crear un presupuesto inteligente y decirle a tu dinero exactamente a dónde ir.</p>
             <a href="presupuesto.html" class="mt-4 inline-block bg-green-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-green-700 transition-colors">
@@ -222,7 +222,7 @@
         </div>
     </template>
     <template id="debts-cta-template">
-         <div class="p-4 bg-red-100 text-center rounded-lg">
+         <div id="debts-cta-container" class="p-4 bg-red-100 text-center rounded-lg">
             <h4 class="font-semibold text-red-800">Tu principal misión es conquistar tus deudas.</h4>
             <p class="text-sm text-red-700 mt-1">Usa nuestro centro de comando para crear un plan de batalla y visualizar tu camino hacia la libertad.</p>
             <a href="deudas.html" class="mt-4 inline-block bg-red-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-red-700 transition-colors">
@@ -231,14 +231,14 @@
         </div>
     </template>
     <template id="goals-cta-template">
-        <div class="p-4 bg-indigo-100 text-center rounded-lg">
+        <div id="goals-cta-container" class="p-4 bg-indigo-100 text-center rounded-lg">
             <h4 id="goals-cta-title" class="font-semibold text-indigo-800"></h4>
             <p id="goals-cta-text" class="text-sm text-indigo-700 mt-1"></p>
             <a href="metas.html" id="go-to-goals-btn" class="mt-4 inline-block bg-indigo-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-indigo-700 transition-colors"></a>
         </div>
     </template>
      <template id="investor-profile-template">
-        <div class="p-4 bg-slate-100 rounded-lg">
+        <div id="investor-profile-container" class="p-4 bg-slate-100 rounded-lg">
             <h4 class="font-semibold text-center text-slate-800 mb-3">¿Listo para Invertir? Define tu Perfil</h4>
             <p class="text-center text-xs text-slate-600 mb-3">Tu elección determinará las estrategias de inversión recomendadas.</p>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -249,7 +249,7 @@
         </div>
     </template>
     <template id="investment-recommendations-template">
-        <div class="mt-4 space-y-4 text-sm text-slate-700"></div>
+        <div id="investment-recommendations" class="mt-4 space-y-4 text-sm text-slate-700"></div>
     </template>
 
 
