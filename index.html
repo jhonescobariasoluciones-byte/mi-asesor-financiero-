@@ -360,12 +360,19 @@
             }
 
             function getProgress() {
-                const progress = JSON.parse(localStorage.getItem('userProgress')) || {};
-                return {
-                    achievements: progress.achievements || [],
-                    streak: progress.streak || 0,
-                    lastEntry: progress.lastEntry || null
-                };
+                try {
+                    const progress = JSON.parse(localStorage.getItem('userProgress'));
+                    if (progress && typeof progress === 'object') {
+                         return {
+                            achievements: progress.achievements || [],
+                            streak: progress.streak || 0,
+                            lastEntry: progress.lastEntry || null
+                        };
+                    }
+                } catch (e) {
+                    // Corrupted data, return default
+                }
+                return { achievements: [], streak: 0, lastEntry: null };
             }
 
             function saveProgress(progress) {
@@ -374,7 +381,7 @@
 
             function unlockAchievement(id) {
                 let progress = getProgress();
-                if (!progress.achievements.includes(id)) {
+                if (progress.achievements && !progress.achievements.includes(id)) {
                     progress.achievements.push(id);
                     saveProgress(progress);
                     showToast(achievements[id].title, achievements[id].desc);
