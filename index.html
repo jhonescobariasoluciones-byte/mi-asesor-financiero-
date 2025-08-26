@@ -254,12 +254,12 @@
     </div>
     
     <!-- Plantillas de los CTAs (ocultas) -->
-    <template id="categories-cta-template">
-        <div class="p-4 bg-gray-100 text-center rounded-lg">
-            <h4 class="font-semibold text-gray-800">Personaliza tu Experiencia</h4>
-            <p class="text-sm text-gray-700 mt-1">¿Tus gastos no encajan en las categorías? Crea las tuyas para un análisis más preciso.</p>
-            <a href="categorias.html" class="mt-4 inline-block bg-gray-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-gray-700 transition-colors">
-                Gestionar mis Categorías →
+    <template id="profiles-cta-template">
+        <div class="p-4 bg-teal-100 text-center rounded-lg">
+            <h4 class="font-semibold text-teal-800">¿Gestionas tus finanzas en equipo?</h4>
+            <p class="text-sm text-teal-700 mt-1">Crea un perfil compartido para gestionar las finanzas de tu familia o pareja.</p>
+            <a href="perfiles.html" class="mt-4 inline-block bg-teal-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-teal-700 transition-colors">
+                Gestionar Perfiles →
             </a>
         </div>
     </template>
@@ -336,10 +336,13 @@
                 variableExpenses: [],
                 currentDiagnosis: null,
                 investorProfile: null,
+                activeProfileId: null,
             };
             let expenseChart = null;
 
             // --- DOM ELEMENTS ---
+            const profileModal = document.getElementById('profile-modal');
+            const profileSelectionList = document.getElementById('profile-selection-list');
             const welcomeModal = document.getElementById('welcome-modal');
             const welcomeForm = document.getElementById('welcome-form');
             const userNameInput = document.getElementById('user-name-input');
@@ -401,7 +404,7 @@
 
             function getProgress() {
                 try {
-                    const progress = JSON.parse(localStorage.getItem('userProgress'));
+                    const progress = JSON.parse(localStorage.getItem(`${state.activeProfileId}_userProgress`));
                     if (progress && typeof progress === 'object') {
                          return {
                             achievements: progress.achievements || [],
@@ -416,7 +419,7 @@
             }
 
             function saveProgress(progress) {
-                localStorage.setItem('userProgress', JSON.stringify(progress));
+                localStorage.setItem(`${state.activeProfileId}_userProgress`, JSON.stringify(progress));
             }
 
             function unlockAchievement(id) {
@@ -453,25 +456,49 @@
             }
 
             function checkContextualAchievements() {
-                if (localStorage.getItem('financialGoals')) unlockAchievement('firstGoal');
-                if (localStorage.getItem('financialDebts')) unlockAchievement('firstDebtPlan');
+                if (localStorage.getItem(`${state.activeProfileId}_financialGoals`)) unlockAchievement('firstGoal');
+                if (localStorage.getItem(`${state.activeProfileId}_financialDebts`)) unlockAchievement('firstDebtPlan');
             }
 
-            // --- USER PERSONALIZATION ---
-            function loadUser() {
-                const userName = localStorage.getItem('userName');
+            // --- USER PERSONALIZATION & PROFILES ---
+            function initializeApp() {
+                let profiles = JSON.parse(localStorage.getItem('financialProfiles')) || [];
+                let activeProfileId = localStorage.getItem('activeProfileId');
+
+                if (profiles.length === 0) {
+                    const defaultProfileId = `profile_${Date.now()}`;
+                    profiles.push({ id: defaultProfileId, name: 'Personal', type: 'personal' });
+                    localStorage.setItem('financialProfiles', JSON.stringify(profiles));
+                    localStorage.setItem('activeProfileId', defaultProfileId);
+                    activeProfileId = defaultProfileId;
+                }
+                
+                if (!activeProfileId || !profiles.find(p => p.id === activeProfileId)) {
+                    activeProfileId = profiles[0].id;
+                    localStorage.setItem('activeProfileId', activeProfileId);
+                }
+
+                state.activeProfileId = activeProfileId;
+                
+                const userName = localStorage.getItem(`${state.activeProfileId}_userName`);
                 if (!userName) {
                     welcomeModal.classList.remove('hidden');
                 } else {
                     userNameHeader.textContent = userName;
                 }
+                
+                loadCategories();
+                loadData();
+                updateDashboard();
+                checkStreak();
+                checkContextualAchievements();
             }
 
             welcomeForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 const userName = userNameInput.value.trim();
                 if (userName) {
-                    localStorage.setItem('userName', userName);
+                    localStorage.setItem(`${state.activeProfileId}_userName`, userName);
                     userNameHeader.textContent = userName;
                     welcomeModal.classList.add('hidden');
                 }
@@ -480,7 +507,7 @@
             // --- CATEGORIES ---
             function getCategories() {
                 const defaultCategories = ['Alimentación', 'Transporte', 'Ocio y Entretenimiento', 'Educación', 'Salud', 'Ropa', 'Otros'];
-                const customCategories = JSON.parse(localStorage.getItem('customCategories')) || [];
+                const customCategories = JSON.parse(localStorage.getItem(`${state.activeProfileId}_customCategories`)) || [];
                 return [...defaultCategories, ...customCategories];
             }
 
@@ -521,9 +548,9 @@
                 const newCategory = newCategoryNameInput.value.trim();
                 const allCategories = getCategories();
                 if (newCategory && !allCategories.includes(newCategory)) {
-                    const customCategories = JSON.parse(localStorage.getItem('customCategories')) || [];
+                    const customCategories = JSON.parse(localStorage.getItem(`${state.activeProfileId}_customCategories`)) || [];
                     customCategories.push(newCategory);
-                    localStorage.setItem('customCategories', JSON.stringify(customCategories));
+                    localStorage.setItem(`${state.activeProfileId}_customCategories`, JSON.stringify(customCategories));
                     loadCategories();
                     renderCategoriesInModal();
                     newCategoryNameInput.value = '';
@@ -536,9 +563,9 @@
                 const deleteBtn = e.target.closest('.delete-category-btn');
                 if (deleteBtn) {
                     const categoryName = deleteBtn.dataset.name;
-                    let customCategories = JSON.parse(localStorage.getItem('customCategories')) || [];
+                    let customCategories = JSON.parse(localStorage.getItem(`${state.activeProfileId}_customCategories`)) || [];
                     customCategories = customCategories.filter(cat => cat !== categoryName);
-                    localStorage.setItem('customCategories', JSON.stringify(customCategories));
+                    localStorage.setItem(`${state.activeProfileId}_customCategories`, JSON.stringify(customCategories));
                     
                     // Remove expenses with this category
                     state.variableExpenses = state.variableExpenses.filter(exp => exp.category !== categoryName);
@@ -587,13 +614,13 @@
                     dataToSave.fixedExpenses.push(input.value);
                 });
 
-                const allData = JSON.parse(localStorage.getItem('financieroDataHistory')) || {};
+                const allData = JSON.parse(localStorage.getItem(`${state.activeProfileId}_financieroDataHistory`)) || {};
                 allData[currentMonthKey] = dataToSave;
-                localStorage.setItem('financieroDataHistory', JSON.stringify(allData));
+                localStorage.setItem(`${state.activeProfileId}_financieroDataHistory`, JSON.stringify(allData));
             }
 
             function loadData() {
-                const allData = JSON.parse(localStorage.getItem('financieroDataHistory')) || {};
+                const allData = JSON.parse(localStorage.getItem(`${state.activeProfileId}_financieroDataHistory`)) || {};
                 const now = new Date();
                 const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
                 const data = allData[currentMonthKey];
@@ -677,7 +704,7 @@
             // --- RENDER FUNCTIONS ---
             const renderBudgetTracker = () => {
                 variableExpensesContainer.innerHTML = '';
-                const budget = JSON.parse(localStorage.getItem('financialBudget')) || {};
+                const budget = JSON.parse(localStorage.getItem(`${state.activeProfileId}_financialBudget`)) || {};
                 const expensesByCategory = {};
 
                 state.variableExpenses.forEach(expense => {
@@ -800,7 +827,7 @@
                 const totalVariableExpenses = state.variableExpenses.reduce((sum, exp) => sum + exp.amount, 0);
                 const totalExpenses = totalFixedExpenses + totalVariableExpenses;
                 
-                const allocatedSavings = parseFloat(localStorage.getItem('totalAllocatedSavings')) || 0;
+                const allocatedSavings = parseFloat(localStorage.getItem(`${state.activeProfileId}_totalAllocatedSavings`)) || 0;
                 allocatedSavingsEl.textContent = formatCurrency(allocatedSavings);
 
                 const cashFlow = totalIncome - totalExpenses - allocatedSavings;
@@ -824,13 +851,10 @@
             }
             
             function resetAllData() {
-                localStorage.removeItem('financieroDataHistory');
-                localStorage.removeItem('financialBudget');
-                localStorage.removeItem('financialGoals');
-                localStorage.removeItem('totalAllocatedSavings');
-                localStorage.removeItem('userName');
-                localStorage.removeItem('userProgress');
-                localStorage.removeItem('customCategories');
+                // Clear data for the active profile only
+                const keysToRemove = ['_financieroDataHistory', '_financialBudget', '_financialGoals', '_totalAllocatedSavings', '_userName', '_userProgress', '_customCategories'];
+                keysToRemove.forEach(key => localStorage.removeItem(state.activeProfileId + key));
+                
                 document.querySelectorAll('.data-input').forEach(input => input.value = '');
                 const dynamicIncomes = incomesContainer.querySelectorAll('div:not(:first-child)');
                 dynamicIncomes.forEach(div => div.remove());
@@ -868,7 +892,7 @@
                 document.querySelectorAll('.fixed-expense').forEach(input => totalFixedExpenses += parseFormattedNumber(input.value));
                 const totalVariableExpenses = state.variableExpenses.reduce((sum, exp) => sum + exp.amount, 0);
                 const totalExpenses = totalFixedExpenses + totalVariableExpenses;
-                const allocatedSavings = parseFloat(localStorage.getItem('totalAllocatedSavings')) || 0;
+                const allocatedSavings = parseFloat(localStorage.getItem(`${state.activeProfileId}_totalAllocatedSavings`)) || 0;
                 const cashFlow = totalIncome - totalExpenses - allocatedSavings;
 
                 if (cashFlow > 0) unlockAchievement('positiveCashflow');
@@ -927,15 +951,17 @@
                     investor: document.getElementById('investor-profile-template'),
                     investmentRecs: document.getElementById('investment-recommendations-template'),
                     networth: document.getElementById('networth-cta-template'),
-                    categories: document.getElementById('categories-cta-template')
+                    profiles: document.getElementById('profiles-cta-template')
                 };
 
                 const appendCta = (template) => {
-                    const clone = template.content.cloneNode(true);
-                    actionPathContainer.appendChild(clone);
+                    if (template) {
+                        const clone = template.content.cloneNode(true);
+                        actionPathContainer.appendChild(clone);
+                    }
                 };
 
-                const historyLength = Object.keys(JSON.parse(localStorage.getItem('financieroDataHistory')) || {}).length;
+                const historyLength = Object.keys(JSON.parse(localStorage.getItem(`${state.activeProfileId}_financieroDataHistory`)) || {}).length;
                 if (historyLength > 1) {
                     appendCta(ctaTemplates.progress);
                 } else {
@@ -969,7 +995,7 @@
                 });
                 
                 appendCta(ctaTemplates.networth);
-                appendCta(ctaTemplates.categories);
+                appendCta(ctaTemplates.profiles);
                 
                 const profileFromQuiz = localStorage.getItem('investorProfileFromQuiz');
                 if (profileFromQuiz) {
@@ -1017,9 +1043,9 @@
                 
                 goalsBtn.addEventListener('click', () => {
                     if (cashFlow > 0) {
-                        localStorage.setItem('availableCashFlow', cashFlow);
+                        localStorage.setItem(`${state.activeProfileId}_availableCashFlow`, cashFlow);
                     } else {
-                        localStorage.removeItem('availableCashFlow');
+                        localStorage.removeItem(`${state.activeProfileId}_availableCashFlow`);
                     }
                 });
             }
@@ -1207,12 +1233,7 @@
             }
 
             // --- INITIALIZATION ---
-            loadUser();
-            loadCategories();
-            loadData();
-            updateDashboard();
-            checkStreak();
-            checkContextualAchievements();
+            initializeApp();
         });
     </script>
 </body>
