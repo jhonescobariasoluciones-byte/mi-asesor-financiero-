@@ -66,13 +66,6 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-
         const profilesListEl = document.getElementById('profiles-list');
         const addProfileBtn = document.getElementById('add-profile-btn');
         const joinProfileForm = document.getElementById('join-profile-form');
@@ -84,13 +77,39 @@
 
         let userId;
         let userProfiles = [];
+        let db, auth, app;
 
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                userId = user.uid;
-                loadProfiles();
+        function initializeAppAndAuth() {
+            try {
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                const firebaseConfigString = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
+
+                if (!firebaseConfigString) {
+                    throw new Error("Firebase config not provided.");
+                }
+                const firebaseConfig = JSON.parse(firebaseConfigString);
+                if (!firebaseConfig.projectId) {
+                     throw new Error("Firebase config is invalid (missing projectId).");
+                }
+
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        loadProfiles();
+                    }
+                });
+
+                initAuth();
+
+            } catch (error) {
+                console.error("Failed to initialize Firebase:", error);
+                document.body.innerHTML = `<div class="text-center p-8 text-red-600"><strong>Error de Configuración</strong><p>${error.message}</p></div>`;
             }
-        });
+        }
 
         async function initAuth() {
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -99,8 +118,10 @@
                 await signInAnonymously(auth);
             }
         }
-
+        
         async function loadProfiles() {
+            if (!userId || !db) return;
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
             const userDocRef = doc(db, `artifacts/${appId}/users/${userId}`);
             const userDoc = await getDoc(userDocRef);
             
@@ -148,9 +169,14 @@
 
         profileForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (!db || !userId) {
+                alert("La base de datos no está conectada. No se puede crear el perfil.");
+                return;
+            }
             const name = document.getElementById('profile-name').value;
             const isShared = document.getElementById('profile-shared').checked;
             const type = isShared ? 'shared' : 'personal';
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
             if (name) {
                 const profileId = `profile_${Date.now()}`;
@@ -176,8 +202,13 @@
 
         joinProfileForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (!db || !userId) {
+                alert("La base de datos no está conectada. No se puede unir al perfil.");
+                return;
+            }
             const code = joinCodeInput.value.trim();
             const profileId = `profile_${code}`;
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
             
             const profileDocRef = doc(db, `artifacts/${appId}/public/data/shared_profiles/${profileId}`);
             const profileDoc = await getDoc(profileDocRef);
@@ -204,7 +235,8 @@
         profilesListEl.addEventListener('click', async (e) => {
             const target = e.target;
             const profileId = target.dataset.id;
-            if (!profileId) return;
+            if (!profileId || !db || !userId) return;
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
             if (target.classList.contains('select-btn')) {
                 localStorage.setItem('activeProfileId', profileId);
@@ -219,7 +251,6 @@
                         profiles: arrayRemove(profileToDelete)
                     });
 
-                    // This is a simplified delete, for a real app you'd handle shared profile data deletion more carefully
                     Object.keys(localStorage).forEach(key => {
                         if (key.startsWith(profileId)) {
                             localStorage.removeItem(key);
@@ -256,7 +287,7 @@
             }
         });
 
-        initAuth();
+        initializeAppAndAuth();
     </script>
 </body>
 </html>
