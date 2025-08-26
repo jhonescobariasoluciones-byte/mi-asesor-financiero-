@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestionar Categorías</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://css.gg/css?=|trash" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-2xl">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-slate-900">Personaliza tus Categorías</h1>
+            <p class="text-slate-600 mt-2">Crea categorías que se adapten a tu estilo de vida para un seguimiento más preciso.</p>
+            <a href="index.html" class="text-indigo-600 font-semibold mt-4 inline-block hover:underline">← Volver al Diagnóstico</a>
+        </header>
+
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4">Añadir Nueva Categoría</h2>
+            <form id="add-category-form" class="flex gap-4">
+                <input type="text" id="new-category-name" placeholder="Ej: Mascotas 🐾" class="flex-grow p-2 border border-slate-300 rounded-md" required>
+                <button type="submit" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700">Añadir</button>
+            </form>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-md mt-8">
+            <h2 class="text-xl font-semibold mb-4">Mis Categorías</h2>
+            <div id="categories-list" class="space-y-2">
+                <!-- Las categorías se listarán aquí -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('add-category-form');
+            const input = document.getElementById('new-category-name');
+            const listEl = document.getElementById('categories-list');
+            
+            const defaultCategories = ['Alimentación', 'Transporte', 'Ocio y Entretenimiento', 'Educación', 'Salud', 'Ropa', 'Otros'];
+            let customCategories = [];
+
+            const loadCategories = () => {
+                const saved = localStorage.getItem('customCategories');
+                if (saved) {
+                    customCategories = JSON.parse(saved);
+                }
+                renderCategories();
+            };
+
+            const saveCategories = () => {
+                localStorage.setItem('customCategories', JSON.stringify(customCategories));
+            };
+
+            const renderCategories = () => {
+                listEl.innerHTML = '';
+                const allCategories = [...defaultCategories, ...customCategories];
+                allCategories.forEach(cat => {
+                    const isDefault = defaultCategories.includes(cat);
+                    const item = document.createElement('div');
+                    item.className = 'flex justify-between items-center p-3 rounded-md bg-slate-50';
+                    item.innerHTML = `
+                        <span class="font-medium">${cat}</span>
+                        ${!isDefault ? `
+                        <button data-name="${cat}" class="delete-btn text-slate-400 hover:text-red-600">
+                            <i class="gg-trash"></i>
+                        </button>
+                        ` : '<span class="text-xs text-slate-400">Por defecto</span>'}
+                    `;
+                    listEl.appendChild(item);
+                });
+            };
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const newCategory = input.value.trim();
+                if (newCategory && ![...defaultCategories, ...customCategories].includes(newCategory)) {
+                    customCategories.push(newCategory);
+                    saveCategories();
+                    renderCategories();
+                    input.value = '';
+                } else {
+                    alert('La categoría ya existe o el nombre no es válido.');
+                }
+            });
+
+            listEl.addEventListener('click', (e) => {
+                if (e.target.closest('.delete-btn')) {
+                    const categoryName = e.target.closest('.delete-btn').dataset.name;
+                    customCategories = customCategories.filter(cat => cat !== categoryName);
+                    saveCategories();
+                    renderCategories();
+                }
+            });
+            
+            loadCategories();
+        });
+    </script>
+</body>
+</html>
