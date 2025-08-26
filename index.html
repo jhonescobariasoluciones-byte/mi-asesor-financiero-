@@ -25,17 +25,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
-        /* Estilo personalizado para usar la fuente Inter */
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        /* Estilo para los placeholders de los inputs */
-        ::placeholder {
-            color: #9ca3af;
-        }
-        .hidden {
-            display: none;
-        }
+        body { font-family: 'Inter', sans-serif; }
+        ::placeholder { color: #9ca3af; }
+        .hidden { display: none; }
         #achievement-toast {
             transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
             transform: translateY(100%);
@@ -44,6 +36,10 @@
         #achievement-toast.show {
             transform: translateY(0);
             opacity: 1;
+        }
+        #categories-modal > div {
+            max-height: 90vh;
+            overflow-y: auto;
         }
     </style>
 </head>
@@ -58,6 +54,27 @@
                 <input type="text" id="user-name-input" placeholder="Escribe tu nombre aquí" class="w-full p-3 border border-slate-300 rounded-md text-center" required>
                 <button type="submit" class="mt-4 w-full bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors">Comenzar</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Categories Modal -->
+    <div id="categories-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-40 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Gestionar Categorías</h2>
+                <button id="close-categories-modal-btn" class="text-3xl leading-none text-slate-400 hover:text-slate-800">&times;</button>
+            </div>
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold mb-2">Añadir Nueva Categoría</h3>
+                <form id="add-category-form" class="flex gap-4">
+                    <input type="text" id="new-category-name" placeholder="Ej: Mascotas 🐾" class="flex-grow p-2 border border-slate-300 rounded-md" required>
+                    <button type="submit" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700">Añadir</button>
+                </form>
+            </div>
+            <div>
+                <h3 class="text-lg font-semibold mb-2">Mis Categorías</h3>
+                <div id="categories-list" class="space-y-2"></div>
+            </div>
         </div>
     </div>
 
@@ -132,7 +149,10 @@
 
                 <!-- Card de Gastos Variables -->
                 <div class="bg-white p-6 rounded-lg shadow-md">
-                    <h2 class="text-xl font-semibold mb-4 border-b pb-2">3. Gastos Variables Mensuales</h2>
+                    <div class="flex justify-between items-center mb-4 border-b pb-2">
+                        <h2 class="text-xl font-semibold">3. Gastos Variables Mensuales</h2>
+                        <button id="manage-categories-btn" class="text-sm font-semibold text-indigo-600 hover:text-indigo-800">Gestionar Categorías</button>
+                    </div>
                     <form id="variable-expense-form" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end mb-6">
                         <div class="md:col-span-2">
                             <label for="expense-desc" class="text-sm font-medium text-slate-700">Descripción</label>
@@ -353,6 +373,14 @@
             
             const chartCanvasEl = document.getElementById('expenses-chart');
             const chartCanvas = chartCanvasEl.getContext('2d');
+
+            // Categories Modal Elements
+            const manageCategoriesBtn = document.getElementById('manage-categories-btn');
+            const categoriesModal = document.getElementById('categories-modal');
+            const closeCategoriesModalBtn = document.getElementById('close-categories-modal-btn');
+            const addCategoryForm = document.getElementById('add-category-form');
+            const newCategoryNameInput = document.getElementById('new-category-name');
+            const categoriesListEl = document.getElementById('categories-list');
             
             // --- GAMIFICATION ---
             const achievements = {
@@ -450,13 +478,77 @@
             });
 
             // --- CATEGORIES ---
-            function loadCategories() {
+            function getCategories() {
                 const defaultCategories = ['Alimentación', 'Transporte', 'Ocio y Entretenimiento', 'Educación', 'Salud', 'Ropa', 'Otros'];
                 const customCategories = JSON.parse(localStorage.getItem('customCategories')) || [];
-                const allCategories = [...defaultCategories, ...customCategories];
-                
+                return [...defaultCategories, ...customCategories];
+            }
+
+            function loadCategories() {
+                const allCategories = getCategories();
                 expenseCategorySelect.innerHTML = allCategories.map(cat => `<option>${cat}</option>`).join('');
             }
+
+            function renderCategoriesInModal() {
+                const allCategories = getCategories();
+                const defaultCategories = ['Alimentación', 'Transporte', 'Ocio y Entretenimiento', 'Educación', 'Salud', 'Ropa', 'Otros'];
+                categoriesListEl.innerHTML = '';
+                allCategories.forEach(cat => {
+                    const isDefault = defaultCategories.includes(cat);
+                    const item = document.createElement('div');
+                    item.className = 'flex justify-between items-center p-3 rounded-md bg-slate-50';
+                    item.innerHTML = `
+                        <span class="font-medium">${cat}</span>
+                        ${!isDefault ? `
+                        <button data-name="${cat}" class="delete-category-btn text-slate-400 hover:text-red-600">
+                            <i class="gg-trash"></i>
+                        </button>
+                        ` : '<span class="text-xs text-slate-400">Por defecto</span>'}
+                    `;
+                    listEl.appendChild(item);
+                });
+            }
+            
+            manageCategoriesBtn.addEventListener('click', () => {
+                renderCategoriesInModal();
+                categoriesModal.classList.remove('hidden');
+            });
+
+            closeCategoriesModalBtn.addEventListener('click', () => categoriesModal.classList.add('hidden'));
+
+            addCategoryForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const newCategory = newCategoryNameInput.value.trim();
+                const allCategories = getCategories();
+                if (newCategory && !allCategories.includes(newCategory)) {
+                    const customCategories = JSON.parse(localStorage.getItem('customCategories')) || [];
+                    customCategories.push(newCategory);
+                    localStorage.setItem('customCategories', JSON.stringify(customCategories));
+                    loadCategories();
+                    renderCategoriesInModal();
+                    newCategoryNameInput.value = '';
+                } else {
+                    alert('La categoría ya existe o el nombre no es válido.');
+                }
+            });
+
+            categoriesListEl.addEventListener('click', (e) => {
+                const deleteBtn = e.target.closest('.delete-category-btn');
+                if (deleteBtn) {
+                    const categoryName = deleteBtn.dataset.name;
+                    let customCategories = JSON.parse(localStorage.getItem('customCategories')) || [];
+                    customCategories = customCategories.filter(cat => cat !== categoryName);
+                    localStorage.setItem('customCategories', JSON.stringify(customCategories));
+                    
+                    // Remove expenses with this category
+                    state.variableExpenses = state.variableExpenses.filter(exp => exp.category !== categoryName);
+                    
+                    loadCategories();
+                    renderCategoriesInModal();
+                    updateDashboard();
+                }
+            });
+
 
             // --- UTILITY FUNCTIONS ---
             const parseFormattedNumber = (value) => parseFloat(String(value).replace(/\./g, '')) || 0;
@@ -738,6 +830,7 @@
                 localStorage.removeItem('totalAllocatedSavings');
                 localStorage.removeItem('userName');
                 localStorage.removeItem('userProgress');
+                localStorage.removeItem('customCategories');
                 document.querySelectorAll('.data-input').forEach(input => input.value = '');
                 const dynamicIncomes = incomesContainer.querySelectorAll('div:not(:first-child)');
                 dynamicIncomes.forEach(div => div.remove());
@@ -1115,6 +1208,7 @@
 
             // --- INITIALIZATION ---
             loadUser();
+            loadCategories();
             loadData();
             updateDashboard();
             checkStreak();
