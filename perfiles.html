@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
+        #profile-modal > div { max-height: 90vh; overflow-y: auto; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -35,10 +36,35 @@
         </div>
     </div>
 
+    <!-- Modal para añadir perfil -->
+    <div id="profile-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Crear Nuevo Perfil</h2>
+                <button id="close-modal-btn" class="text-3xl leading-none text-slate-400 hover:text-slate-800">&times;</button>
+            </div>
+            <form id="profile-form">
+                <div class="space-y-4">
+                    <div>
+                        <label for="profile-name" class="block text-sm font-medium text-slate-700">Nombre del Perfil</label>
+                        <input type="text" id="profile-name" placeholder="Ej: Familia Pérez" class="mt-1 w-full p-2 border rounded" required>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" id="profile-shared" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                        <label for="profile-shared" class="ml-2 block text-sm text-slate-900">¿Es un perfil compartido?</label>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end">
+                    <button type="submit" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700">Guardar Perfil</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
@@ -51,8 +77,13 @@
         const addProfileBtn = document.getElementById('add-profile-btn');
         const joinProfileForm = document.getElementById('join-profile-form');
         const joinCodeInput = document.getElementById('join-code-input');
+        
+        const profileModal = document.getElementById('profile-modal');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const profileForm = document.getElementById('profile-form');
 
         let userId;
+        let userProfiles = [];
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -72,16 +103,17 @@
         async function loadProfiles() {
             const userDocRef = doc(db, `artifacts/${appId}/users/${userId}`);
             const userDoc = await getDoc(userDocRef);
-            const profiles = userDoc.exists() ? userDoc.data().profiles || [] : [];
             
-            if (profiles.length === 0) {
+            userProfiles = userDoc.exists() ? userDoc.data().profiles || [] : [];
+            
+            if (userProfiles.length === 0) {
                 const newProfileId = `profile_${Date.now()}`;
                 const newProfile = { id: newProfileId, name: 'Personal', type: 'personal' };
-                profiles.push(newProfile);
-                await setDoc(userDocRef, { profiles });
+                userProfiles.push(newProfile);
+                await setDoc(userDocRef, { profiles: userProfiles });
                 localStorage.setItem('activeProfileId', newProfileId);
             }
-            renderProfiles(profiles);
+            renderProfiles(userProfiles);
         }
 
         function renderProfiles(profiles) {
@@ -95,32 +127,50 @@
                 profileEl.innerHTML = `
                     <div>
                         <p class="font-bold">${profile.name}</p>
-                        <p class="text-xs text-slate-500">${profile.type === 'shared' ? `Compartido (Código: ${profile.id.split('_')[1]})` : 'Personal'}</p>
+                        <p class="text-xs text-slate-500">${profile.type === 'shared' ? `Compartido (Código: ${profile.inviteCode})` : 'Personal'}</p>
                     </div>
                     <div class="flex gap-2">
                         ${!isActive ? `<button data-id="${profile.id}" class="select-btn text-sm bg-green-500 text-white px-3 py-1 rounded-md hover:bg-green-600">Activar</button>` : '<span class="text-sm font-bold text-indigo-700">Activo</span>'}
+                        <button data-id="${profile.id}" class="export-btn text-sm bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600">Exportar</button>
+                        <button data-id="${profile.id}" class="delete-btn text-sm bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600">Eliminar</button>
                     </div>
                 `;
                 profilesListEl.appendChild(profileEl);
             });
         }
 
-        addProfileBtn.addEventListener('click', async () => {
-            const name = prompt('Ingresa el nombre del nuevo perfil (ej: Familia Pérez):');
-            if (name) {
-                const type = 'shared'; // For simplicity, new profiles are shared
-                const profileId = `profile_${Date.now()}`;
-                
-                // Create profile document in public space
-                const profileDocRef = doc(db, `artifacts/${appId}/public/data/${profileId}`);
-                await setDoc(profileDocRef, { name, members: [userId] });
+        addProfileBtn.addEventListener('click', () => {
+            profileForm.reset();
+            profileModal.classList.remove('hidden');
+        });
+        
+        closeModalBtn.addEventListener('click', () => profileModal.classList.add('hidden'));
 
-                // Add profile to user's list
+        profileForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('profile-name').value;
+            const isShared = document.getElementById('profile-shared').checked;
+            const type = isShared ? 'shared' : 'personal';
+
+            if (name) {
+                const profileId = `profile_${Date.now()}`;
+                const inviteCode = type === 'shared' ? profileId.split('_')[1] : null;
+                
+                const newProfileData = { id: profileId, name, type };
+                if(inviteCode) newProfileData.inviteCode = inviteCode;
+
+                if (type === 'shared') {
+                    const profileDocRef = doc(db, `artifacts/${appId}/public/data/shared_profiles/${profileId}`);
+                    await setDoc(profileDocRef, { name, members: [userId], type });
+                }
+
                 const userDocRef = doc(db, `artifacts/${appId}/users/${userId}`);
-                await updateDoc(userDocRef, {
-                    profiles: arrayUnion({ id: profileId, name, type })
-                });
+                await setDoc(userDocRef, {
+                    profiles: arrayUnion(newProfileData)
+                }, { merge: true });
+                
                 loadProfiles();
+                profileModal.classList.add('hidden');
             }
         });
 
@@ -129,31 +179,80 @@
             const code = joinCodeInput.value.trim();
             const profileId = `profile_${code}`;
             
-            const profileDocRef = doc(db, `artifacts/${appId}/public/data/${profileId}`);
+            const profileDocRef = doc(db, `artifacts/${appId}/public/data/shared_profiles/${profileId}`);
             const profileDoc = await getDoc(profileDocRef);
 
             if (profileDoc.exists()) {
                 const profileData = profileDoc.data();
-                // Add user to members list in the shared profile
                 await updateDoc(profileDocRef, { members: arrayUnion(userId) });
                 
-                // Add profile to user's list
                 const userDocRef = doc(db, `artifacts/${appId}/users/${userId}`);
-                await updateDoc(userDocRef, {
-                    profiles: arrayUnion({ id: profileId, name: profileData.name, type: 'shared' })
-                });
+                const newProfileData = { id: profileId, name: profileData.name, type: 'shared', inviteCode: code };
+                
+                await setDoc(userDocRef, {
+                    profiles: arrayUnion(newProfileData)
+                }, { merge: true });
+
                 alert('¡Te has unido al perfil con éxito!');
                 loadProfiles();
+                joinCodeInput.value = '';
             } else {
                 alert('Código de perfil no encontrado.');
             }
         });
 
-        profilesListEl.addEventListener('click', (e) => {
+        profilesListEl.addEventListener('click', async (e) => {
             const target = e.target;
+            const profileId = target.dataset.id;
+            if (!profileId) return;
+
             if (target.classList.contains('select-btn')) {
-                localStorage.setItem('activeProfileId', target.dataset.id);
-                loadProfiles();
+                localStorage.setItem('activeProfileId', profileId);
+                renderProfiles(userProfiles);
+            }
+
+            if (target.classList.contains('delete-btn')) {
+                const profileToDelete = userProfiles.find(p => p.id === profileId);
+                if (profileToDelete) {
+                    const userDocRef = doc(db, `artifacts/${appId}/users/${userId}`);
+                    await updateDoc(userDocRef, {
+                        profiles: arrayRemove(profileToDelete)
+                    });
+
+                    // This is a simplified delete, for a real app you'd handle shared profile data deletion more carefully
+                    Object.keys(localStorage).forEach(key => {
+                        if (key.startsWith(profileId)) {
+                            localStorage.removeItem(key);
+                        }
+                    });
+                    
+                    if (localStorage.getItem('activeProfileId') === profileId) {
+                        const remainingProfiles = userProfiles.filter(p => p.id !== profileId);
+                        if (remainingProfiles.length > 0) {
+                            localStorage.setItem('activeProfileId', remainingProfiles[0].id);
+                        } else {
+                            localStorage.removeItem('activeProfileId');
+                        }
+                    }
+                    
+                    loadProfiles();
+                }
+            }
+
+            if (target.classList.contains('export-btn')) {
+                const dataToExport = {};
+                Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith(profileId)) {
+                        dataToExport[key] = localStorage.getItem(key);
+                    }
+                });
+                const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${profileId}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
             }
         });
 
