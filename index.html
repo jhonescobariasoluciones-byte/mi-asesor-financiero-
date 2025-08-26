@@ -25,9 +25,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        ::placeholder { color: #9ca3af; }
-        .hidden { display: none; }
+        /* Estilo personalizado para usar la fuente Inter */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Estilo para los placeholders de los inputs */
+        ::placeholder {
+            color: #9ca3af;
+        }
+        .hidden {
+            display: none;
+        }
         #achievement-toast {
             transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
             transform: translateY(100%);
@@ -137,13 +145,7 @@
                         <div class="md:col-span-2">
                             <label for="expense-category" class="text-sm font-medium text-slate-700">Categoría</label>
                             <select id="expense-category" class="mt-1 block w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                                <option>Alimentación</option>
-                                <option>Transporte</option>
-                                <option>Ocio y Entretenimiento</option>
-                                <option>Educación</option>
-                                <option>Salud</option>
-                                <option>Ropa</option>
-                                <option>Otros</option>
+                                <!-- Categorías se cargarán aquí -->
                             </select>
                         </div>
                         <button type="submit" class="md:col-span-2 w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">Añadir Gasto</button>
@@ -232,8 +234,17 @@
     </div>
     
     <!-- Plantillas de los CTAs (ocultas) -->
+    <template id="categories-cta-template">
+        <div class="p-4 bg-gray-100 text-center rounded-lg">
+            <h4 class="font-semibold text-gray-800">Personaliza tu Experiencia</h4>
+            <p class="text-sm text-gray-700 mt-1">¿Tus gastos no encajan en las categorías? Crea las tuyas para un análisis más preciso.</p>
+            <a href="categorias.html" class="mt-4 inline-block bg-gray-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-gray-700 transition-colors">
+                Gestionar mis Categorías →
+            </a>
+        </div>
+    </template>
     <template id="networth-cta-template">
-        <div class="p-4 bg-purple-100 text-center rounded-lg">
+        <div id="networth-cta-container" class="p-4 bg-purple-100 text-center rounded-lg">
             <h4 class="font-semibold text-purple-800">Mide lo que Realmente Importa</h4>
             <p class="text-sm text-purple-700 mt-1">Tu flujo de caja es el motor, pero tu patrimonio neto es el destino. Descubre tu verdadera riqueza y mira cómo crece.</p>
             <a href="patrimonio.html" class="mt-4 inline-block bg-purple-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-purple-700 transition-colors">
@@ -242,7 +253,7 @@
         </div>
     </template>
     <template id="progress-cta-template">
-        <div class="p-4 bg-blue-100 text-center rounded-lg">
+        <div id="progress-cta-container" class="p-4 bg-blue-100 text-center rounded-lg">
             <h4 class="font-semibold text-blue-800">¡Tu esfuerzo está dando frutos!</h4>
             <p class="text-sm text-blue-700 mt-1">Hemos guardado tu historial. Visita tu dashboard de progreso para ver cómo tus decisiones están transformando tus finanzas.</p>
             <a href="progreso.html" class="mt-4 inline-block bg-blue-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-blue-700 transition-colors">
@@ -257,7 +268,7 @@
         </div>
     </template>
     <template id="budget-cta-template">
-        <div class="p-4 bg-green-100 text-center rounded-lg">
+        <div id="budget-cta-container" class="p-4 bg-green-100 text-center rounded-lg">
             <h4 class="font-semibold text-green-800">¡Ahora, toma el control del próximo mes!</h4>
             <p class="text-sm text-green-700 mt-1">Usa tu diagnóstico para crear un presupuesto inteligente y decirle a tu dinero exactamente a dónde ir.</p>
             <a href="presupuesto.html" class="mt-4 inline-block bg-green-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-green-700 transition-colors">
@@ -266,7 +277,7 @@
         </div>
     </template>
     <template id="debts-cta-template">
-         <div class="p-4 bg-red-100 text-center rounded-lg">
+         <div id="debts-cta-container" class="p-4 bg-red-100 text-center rounded-lg">
             <h4 class="font-semibold text-red-800">Tu principal misión es conquistar tus deudas.</h4>
             <p class="text-sm text-red-700 mt-1">Usa nuestro centro de comando para crear un plan de batalla y visualizar tu camino hacia la libertad.</p>
             <a href="deudas.html" class="mt-4 inline-block bg-red-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-red-700 transition-colors">
@@ -275,14 +286,14 @@
         </div>
     </template>
     <template id="goals-cta-template">
-        <div class="p-4 bg-indigo-100 text-center rounded-lg">
+        <div id="goals-cta-container" class="p-4 bg-indigo-100 text-center rounded-lg">
             <h4 id="goals-cta-title" class="font-semibold text-indigo-800"></h4>
             <p id="goals-cta-text" class="text-sm text-indigo-700 mt-1"></p>
             <a href="metas.html" id="go-to-goals-btn" class="mt-4 inline-block bg-indigo-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-indigo-700 transition-colors"></a>
         </div>
     </template>
      <template id="investor-profile-template">
-        <div class="p-4 bg-slate-100 rounded-lg">
+        <div id="investor-profile-container" class="p-4 bg-slate-100 rounded-lg">
             <h4 class="font-semibold text-center text-slate-800 mb-3">¿Listo para Invertir? Define tu Perfil</h4>
             <p class="text-center text-xs text-slate-600 mb-3">Tu elección determinará las estrategias. <a href="perfil-inversor.html" class="text-indigo-600 hover:underline font-semibold">¿No sabes cuál es tu perfil? Haz el test aquí.</a></p>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -327,6 +338,7 @@
             const totalExpensesEl = document.getElementById('total-expenses');
             const allocatedSavingsEl = document.getElementById('allocated-savings');
             const cashFlowEl = document.getElementById('cash-flow');
+            const expenseCategorySelect = document.getElementById('expense-category');
             
             // Diagnosis Section Elements
             const resetBtn = document.getElementById('reset-btn');
@@ -436,6 +448,15 @@
                     welcomeModal.classList.add('hidden');
                 }
             });
+
+            // --- CATEGORIES ---
+            function loadCategories() {
+                const defaultCategories = ['Alimentación', 'Transporte', 'Ocio y Entretenimiento', 'Educación', 'Salud', 'Ropa', 'Otros'];
+                const customCategories = JSON.parse(localStorage.getItem('customCategories')) || [];
+                const allCategories = [...defaultCategories, ...customCategories];
+                
+                expenseCategorySelect.innerHTML = allCategories.map(cat => `<option>${cat}</option>`).join('');
+            }
 
             // --- UTILITY FUNCTIONS ---
             const parseFormattedNumber = (value) => parseFloat(String(value).replace(/\./g, '')) || 0;
@@ -611,13 +632,25 @@
                             ${categoryExpenses.map(exp => `
                                 <li class="flex justify-between items-center pl-4">
                                     <span>${exp.description}</span>
-                                    <span>${formatCurrency(exp.amount)}</span>
+                                    <div class="flex items-center gap-2">
+                                        <span>${formatCurrency(exp.amount)}</span>
+                                        <button data-id="${exp.id}" class="delete-expense-btn text-red-400 hover:text-red-600 text-xl leading-none">&times;</button>
+                                    </div>
                                 </li>
                             `).join('')}
                         </ul>
                     `;
                     variableExpensesContainer.appendChild(categoryDiv);
                 }
+                
+                variableExpensesContainer.addEventListener('click', (e) => {
+                    const deleteBtn = e.target.closest('.delete-expense-btn');
+                    if(deleteBtn) {
+                        const expenseId = parseInt(deleteBtn.dataset.id);
+                        state.variableExpenses = state.variableExpenses.filter(exp => exp.id !== expenseId);
+                        updateDashboard();
+                    }
+                });
             };
             
             Chart.register(ChartDataLabels);
@@ -800,7 +833,8 @@
                     goals: document.getElementById('goals-cta-template'),
                     investor: document.getElementById('investor-profile-template'),
                     investmentRecs: document.getElementById('investment-recommendations-template'),
-                    networth: document.getElementById('networth-cta-template')
+                    networth: document.getElementById('networth-cta-template'),
+                    categories: document.getElementById('categories-cta-template')
                 };
 
                 const appendCta = (template) => {
@@ -842,6 +876,7 @@
                 });
                 
                 appendCta(ctaTemplates.networth);
+                appendCta(ctaTemplates.categories);
                 
                 const profileFromQuiz = localStorage.getItem('investorProfileFromQuiz');
                 if (profileFromQuiz) {
