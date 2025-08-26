@@ -338,8 +338,29 @@
     </template>
 
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // This function will be called once the DOM is loaded.
+        function main() {
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const firebaseConfigString = typeof __firebase_config !== 'undefined' ? __firebase_config : '{}';
+            
+            let app, db, auth;
+            try {
+                const firebaseConfig = JSON.parse(firebaseConfigString);
+                if (!firebaseConfig.projectId) throw new Error("Missing projectId");
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+            } catch(e) {
+                console.error("Firebase initialization error:", e);
+                document.body.innerHTML = `<div class="text-center p-8 text-red-600"><strong>Error de Configuración de Firebase.</strong><p>Por favor, verifica que la configuración sea correcta.</p></div>`;
+                return;
+            }
+
             // --- STATE MANAGEMENT ---
             let state = {
                 currency: 'COP',
@@ -474,7 +495,8 @@
             }
 
             // --- USER PERSONALIZATION & PROFILES ---
-            function initializeApp() {
+            async function initializeApp() {
+                await initAuth();
                 let profiles = JSON.parse(localStorage.getItem('financialProfiles')) || [];
                 let activeProfileId = localStorage.getItem('activeProfileId');
 
@@ -583,7 +605,6 @@
                     customCategories = customCategories.filter(cat => cat !== categoryName);
                     localStorage.setItem(`${state.activeProfileId}_customCategories`, JSON.stringify(customCategories));
                     
-                    // Remove expenses with this category
                     state.variableExpenses = state.variableExpenses.filter(exp => exp.category !== categoryName);
                     
                     loadCategories();
@@ -1249,6 +1270,14 @@
             }
 
             // --- INITIALIZATION ---
+            async function initAuth() {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else if (!auth.currentUser) {
+                    await signInAnonymously(auth);
+                }
+            }
+            
             initializeApp();
         });
     </script>
