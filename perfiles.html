@@ -66,44 +66,39 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // --- GLOBAL STATE ---
+        const state = {
+            db: null,
+            auth: null,
+            appId: typeof __app_id !== 'undefined' ? __app_id : 'default-app-id',
+            userId: null,
+            userProfiles: []
+        };
+
+        // --- DOM ELEMENTS ---
         const profilesListEl = document.getElementById('profiles-list');
         const addProfileBtn = document.getElementById('add-profile-btn');
         const joinProfileForm = document.getElementById('join-profile-form');
         const joinCodeInput = document.getElementById('join-code-input');
-        
         const profileModal = document.getElementById('profile-modal');
         const closeModalBtn = document.getElementById('close-modal-btn');
         const profileForm = document.getElementById('profile-form');
 
-        let userId;
-        let userProfiles = [];
-        let db, auth, app;
-
-        function initializeAppAndAuth() {
+        // --- CORE FUNCTIONS ---
+        async function initializeAppAndAuth() {
             try {
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
                 const firebaseConfigString = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
-
-                if (!firebaseConfigString) {
-                    throw new Error("Firebase config not provided.");
-                }
+                if (!firebaseConfigString) throw new Error("Firebase config not provided.");
+                
                 const firebaseConfig = JSON.parse(firebaseConfigString);
-                if (!firebaseConfig.projectId) {
-                     throw new Error("Firebase config is invalid (missing projectId).");
-                }
+                if (!firebaseConfig.projectId) throw new Error("Firebase config is invalid (missing projectId).");
 
-                app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
+                const app = initializeApp(firebaseConfig);
+                state.db = getFirestore(app);
+                state.auth = getAuth(app);
 
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        loadProfiles();
-                    }
-                });
-
-                initAuth();
+                await initAuth();
+                attachEventListeners();
 
             } catch (error) {
                 console.error("Failed to initialize Firebase:", error);
@@ -112,29 +107,38 @@
         }
 
         async function initAuth() {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else if (!auth.currentUser) {
-                await signInAnonymously(auth);
-            }
+            return new Promise((resolve) => {
+                onAuthStateChanged(state.auth, async (user) => {
+                    if (user) {
+                        state.userId = user.uid;
+                        await loadProfiles();
+                        resolve();
+                    } else {
+                         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(state.auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(state.auth);
+                        }
+                    }
+                });
+            });
         }
         
         async function loadProfiles() {
-            if (!userId || !db) return;
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            const userDocRef = doc(db, `artifacts/${appId}/users/${userId}`);
+            if (!state.userId || !state.db) return;
+            const userDocRef = doc(state.db, `artifacts/${state.appId}/users/${state.userId}`);
             const userDoc = await getDoc(userDocRef);
             
-            userProfiles = userDoc.exists() ? userDoc.data().profiles || [] : [];
+            state.userProfiles = userDoc.exists() ? userDoc.data().profiles || [] : [];
             
-            if (userProfiles.length === 0) {
+            if (state.userProfiles.length === 0) {
                 const newProfileId = `profile_${Date.now()}`;
                 const newProfile = { id: newProfileId, name: 'Personal', type: 'personal' };
-                userProfiles.push(newProfile);
-                await setDoc(userDocRef, { profiles: userProfiles });
+                state.userProfiles.push(newProfile);
+                await setDoc(userDocRef, { profiles: state.userProfiles });
                 localStorage.setItem('activeProfileId', newProfileId);
             }
-            renderProfiles(userProfiles);
+            renderProfiles(state.userProfiles);
         }
 
         function renderProfiles(profiles) {
@@ -160,133 +164,126 @@
             });
         }
 
-        addProfileBtn.addEventListener('click', () => {
-            profileForm.reset();
-            profileModal.classList.remove('hidden');
-        });
-        
-        closeModalBtn.addEventListener('click', () => profileModal.classList.add('hidden'));
-
-        profileForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!db || !userId) {
-                alert("La base de datos no está conectada. No se puede crear el perfil.");
-                return;
-            }
-            const name = document.getElementById('profile-name').value;
-            const isShared = document.getElementById('profile-shared').checked;
-            const type = isShared ? 'shared' : 'personal';
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
-            if (name) {
-                const profileId = `profile_${Date.now()}`;
-                const inviteCode = type === 'shared' ? profileId.split('_')[1] : null;
-                
-                const newProfileData = { id: profileId, name, type };
-                if(inviteCode) newProfileData.inviteCode = inviteCode;
-
-                if (type === 'shared') {
-                    const profileDocRef = doc(db, `artifacts/${appId}/public/data/shared_profiles/${profileId}`);
-                    await setDoc(profileDocRef, { name, members: [userId], type });
-                }
-
-                const userDocRef = doc(db, `artifacts/${appId}/users/${userId}`);
-                await setDoc(userDocRef, {
-                    profiles: arrayUnion(newProfileData)
-                }, { merge: true });
-                
-                loadProfiles();
-                profileModal.classList.add('hidden');
-            }
-        });
-
-        joinProfileForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!db || !userId) {
-                alert("La base de datos no está conectada. No se puede unir al perfil.");
-                return;
-            }
-            const code = joinCodeInput.value.trim();
-            const profileId = `profile_${code}`;
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        // --- EVENT LISTENERS ---
+        function attachEventListeners() {
+            addProfileBtn.addEventListener('click', () => {
+                profileForm.reset();
+                profileModal.classList.remove('hidden');
+            });
             
-            const profileDocRef = doc(db, `artifacts/${appId}/public/data/shared_profiles/${profileId}`);
-            const profileDoc = await getDoc(profileDocRef);
+            closeModalBtn.addEventListener('click', () => profileModal.classList.add('hidden'));
 
-            if (profileDoc.exists()) {
-                const profileData = profileDoc.data();
-                await updateDoc(profileDocRef, { members: arrayUnion(userId) });
-                
-                const userDocRef = doc(db, `artifacts/${appId}/users/${userId}`);
-                const newProfileData = { id: profileId, name: profileData.name, type: 'shared', inviteCode: code };
-                
-                await setDoc(userDocRef, {
-                    profiles: arrayUnion(newProfileData)
-                }, { merge: true });
+            profileForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const name = document.getElementById('profile-name').value;
+                const isShared = document.getElementById('profile-shared').checked;
+                const type = isShared ? 'shared' : 'personal';
 
-                alert('¡Te has unido al perfil con éxito!');
-                loadProfiles();
-                joinCodeInput.value = '';
-            } else {
-                alert('Código de perfil no encontrado.');
-            }
-        });
-
-        profilesListEl.addEventListener('click', async (e) => {
-            const target = e.target;
-            const profileId = target.dataset.id;
-            if (!profileId || !db || !userId) return;
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
-            if (target.classList.contains('select-btn')) {
-                localStorage.setItem('activeProfileId', profileId);
-                renderProfiles(userProfiles);
-            }
-
-            if (target.classList.contains('delete-btn')) {
-                const profileToDelete = userProfiles.find(p => p.id === profileId);
-                if (profileToDelete) {
-                    const userDocRef = doc(db, `artifacts/${appId}/users/${userId}`);
-                    await updateDoc(userDocRef, {
-                        profiles: arrayRemove(profileToDelete)
-                    });
-
-                    Object.keys(localStorage).forEach(key => {
-                        if (key.startsWith(profileId)) {
-                            localStorage.removeItem(key);
-                        }
-                    });
+                if (name) {
+                    const profileId = `profile_${Date.now()}`;
+                    const inviteCode = type === 'shared' ? profileId.split('_')[1] : null;
                     
-                    if (localStorage.getItem('activeProfileId') === profileId) {
-                        const remainingProfiles = userProfiles.filter(p => p.id !== profileId);
-                        if (remainingProfiles.length > 0) {
-                            localStorage.setItem('activeProfileId', remainingProfiles[0].id);
-                        } else {
-                            localStorage.removeItem('activeProfileId');
-                        }
+                    const newProfileData = { id: profileId, name, type };
+                    if(inviteCode) newProfileData.inviteCode = inviteCode;
+
+                    if (type === 'shared') {
+                        const profileDocRef = doc(state.db, `artifacts/${state.appId}/public/data/shared_profiles/${profileId}`);
+                        await setDoc(profileDocRef, { name, members: [state.userId], type });
                     }
+
+                    const userDocRef = doc(state.db, `artifacts/${state.appId}/users/${state.userId}`);
+                    await setDoc(userDocRef, {
+                        profiles: arrayUnion(newProfileData)
+                    }, { merge: true });
                     
                     loadProfiles();
+                    profileModal.classList.add('hidden');
                 }
-            }
+            });
 
-            if (target.classList.contains('export-btn')) {
-                const dataToExport = {};
-                Object.keys(localStorage).forEach(key => {
-                    if (key.startsWith(profileId)) {
-                        dataToExport[key] = localStorage.getItem(key);
+            joinProfileForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const code = joinCodeInput.value.trim();
+                const profileId = `profile_${code}`;
+                
+                const profileDocRef = doc(state.db, `artifacts/${state.appId}/public/data/shared_profiles/${profileId}`);
+                const profileDoc = await getDoc(profileDocRef);
+
+                if (profileDoc.exists()) {
+                    const profileData = profileDoc.data();
+                    await updateDoc(profileDocRef, { members: arrayUnion(state.userId) });
+                    
+                    const userDocRef = doc(state.db, `artifacts/${state.appId}/users/${state.userId}`);
+                    const newProfileData = { id: profileId, name: profileData.name, type: 'shared', inviteCode: code };
+                    
+                    await setDoc(userDocRef, {
+                        profiles: arrayUnion(newProfileData)
+                    }, { merge: true });
+
+                    alert('¡Te has unido al perfil con éxito!');
+                    loadProfiles();
+                    joinCodeInput.value = '';
+                } else {
+                    alert('Código de perfil no encontrado.');
+                }
+            });
+
+            profilesListEl.addEventListener('click', async (e) => {
+                const target = e.target;
+                const profileId = target.dataset.id;
+                if (!profileId) return;
+
+                if (target.classList.contains('select-btn')) {
+                    localStorage.setItem('activeProfileId', profileId);
+                    renderProfiles(state.userProfiles);
+                }
+
+                if (target.classList.contains('delete-btn')) {
+                    const profileToDelete = state.userProfiles.find(p => p.id === profileId);
+                    if (profileToDelete) {
+                        const userDocRef = doc(state.db, `artifacts/${state.appId}/users/${state.userId}`);
+                        await updateDoc(userDocRef, {
+                            profiles: arrayRemove(profileToDelete)
+                        });
+
+                        Object.keys(localStorage).forEach(key => {
+                            if (key.startsWith(profileId)) {
+                                localStorage.removeItem(key);
+                            }
+                        });
+                        
+                        if (localStorage.getItem('activeProfileId') === profileId) {
+                            const remainingProfiles = state.userProfiles.filter(p => p.id !== profileId);
+                            if (remainingProfiles.length > 0) {
+                                localStorage.setItem('activeProfileId', remainingProfiles[0].id);
+                            } else {
+                                localStorage.removeItem('activeProfileId');
+                            }
+                        }
+                        
+                        loadProfiles();
                     }
-                });
-                const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `${profileId}.json`;
-                a.click();
-                URL.revokeObjectURL(url);
-            }
-        });
+                }
 
+                if (target.classList.contains('export-btn')) {
+                    const dataToExport = {};
+                    Object.keys(localStorage).forEach(key => {
+                        if (key.startsWith(profileId)) {
+                            dataToExport[key] = localStorage.getItem(key);
+                        }
+                    });
+                    const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${profileId}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                }
+            });
+        }
+
+        // --- INITIALIZATION ---
         initializeAppAndAuth();
     </script>
 </body>
