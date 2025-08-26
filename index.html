@@ -45,6 +45,16 @@
 </head>
 <body class="bg-slate-50 text-slate-800">
 
+    <!-- Profile Selector Modal -->
+    <div id="profile-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md text-center">
+            <h2 class="text-2xl font-bold text-slate-900">¿Quién eres?</h2>
+            <p class="text-slate-600 mt-2 mb-4">Selecciona un perfil para continuar.</p>
+            <div id="profile-selection-list" class="space-y-2"></div>
+            <a href="perfiles.html" class="text-indigo-600 text-sm font-semibold mt-4 inline-block hover:underline">Gestionar Perfiles</a>
+        </div>
+    </div>
+
     <!-- Welcome Modal -->
     <div id="welcome-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 hidden">
         <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md text-center">
@@ -404,7 +414,10 @@
 
             function getProgress() {
                 try {
-                    const progress = JSON.parse(localStorage.getItem(`${state.activeProfileId}_userProgress`));
+                    const progressData = localStorage.getItem(`${state.activeProfileId}_userProgress`);
+                    if (!progressData) return { achievements: [], streak: 0, lastEntry: null };
+                    
+                    const progress = JSON.parse(progressData);
                     if (progress && typeof progress === 'object') {
                          return {
                             achievements: progress.achievements || [],
@@ -413,7 +426,7 @@
                         };
                     }
                 } catch (e) {
-                    // Corrupted data, return default
+                    console.error("Error parsing user progress:", e);
                 }
                 return { achievements: [], streak: 0, lastEntry: null };
             }
@@ -480,18 +493,21 @@
 
                 state.activeProfileId = activeProfileId;
                 
+                loadUser();
+                loadCategories();
+                loadData();
+                updateDashboard();
+                checkStreak();
+                checkContextualAchievements();
+            }
+
+            function loadUser() {
                 const userName = localStorage.getItem(`${state.activeProfileId}_userName`);
                 if (!userName) {
                     welcomeModal.classList.remove('hidden');
                 } else {
                     userNameHeader.textContent = userName;
                 }
-                
-                loadCategories();
-                loadData();
-                updateDashboard();
-                checkStreak();
-                checkContextualAchievements();
             }
 
             welcomeForm.addEventListener('submit', (e) => {
