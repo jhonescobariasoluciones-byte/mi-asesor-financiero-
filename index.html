@@ -359,17 +359,30 @@
                 }, 5000);
             }
 
+            function getProgress() {
+                const progress = JSON.parse(localStorage.getItem('userProgress')) || {};
+                return {
+                    achievements: progress.achievements || [],
+                    streak: progress.streak || 0,
+                    lastEntry: progress.lastEntry || null
+                };
+            }
+
+            function saveProgress(progress) {
+                localStorage.setItem('userProgress', JSON.stringify(progress));
+            }
+
             function unlockAchievement(id) {
-                let progress = JSON.parse(localStorage.getItem('userProgress')) || { achievements: [] };
+                let progress = getProgress();
                 if (!progress.achievements.includes(id)) {
                     progress.achievements.push(id);
-                    localStorage.setItem('userProgress', JSON.stringify(progress));
+                    saveProgress(progress);
                     showToast(achievements[id].title, achievements[id].desc);
                 }
             }
 
             function checkStreak() {
-                let progress = JSON.parse(localStorage.getItem('userProgress')) || { streak: 0, lastEntry: null };
+                let progress = getProgress();
                 const today = new Date().toISOString().split('T')[0];
                 
                 if (progress.lastEntry !== today) {
@@ -383,7 +396,7 @@
                         progress.streak = 1;
                     }
                     progress.lastEntry = today;
-                    localStorage.setItem('userProgress', JSON.stringify(progress));
+                    saveProgress(progress);
                 }
 
                 if (progress.streak > 0) {
