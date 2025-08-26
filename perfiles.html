@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestionar Perfiles</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-2xl">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-slate-900">Gestionar Perfiles</h1>
+            <p class="text-slate-600 mt-2">Crea perfiles personales o compartidos para gestionar diferentes finanzas.</p>
+            <a href="index.html" class="text-indigo-600 font-semibold mt-4 inline-block hover:underline">← Volver al Diagnóstico</a>
+        </header>
+
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4">Mis Perfiles</h2>
+            <div id="profiles-list" class="space-y-3"></div>
+            <button id="add-profile-btn" class="mt-4 w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700">Crear Nuevo Perfil</button>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-md mt-8">
+            <h2 class="text-xl font-semibold mb-4">Importar Perfil</h2>
+            <p class="text-sm text-slate-500 mb-2">Si alguien compartió un perfil contigo, súbelo aquí.</p>
+            <input type="file" id="import-profile-input" accept=".json" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const profilesListEl = document.getElementById('profiles-list');
+            const addProfileBtn = document.getElementById('add-profile-btn');
+            const importInput = document.getElementById('import-profile-input');
+
+            let profiles = [];
+
+            const loadProfiles = () => {
+                profiles = JSON.parse(localStorage.getItem('financialProfiles')) || [];
+                if (profiles.length === 0) {
+                    // Create a default personal profile if none exist
+                    const defaultProfileId = `profile_${Date.now()}`;
+                    profiles.push({ id: defaultProfileId, name: 'Personal', type: 'personal' });
+                    localStorage.setItem('activeProfileId', defaultProfileId);
+                    saveProfiles();
+                }
+                renderProfiles();
+            };
+
+            const saveProfiles = () => {
+                localStorage.setItem('financialProfiles', JSON.stringify(profiles));
+            };
+
+            const renderProfiles = () => {
+                profilesListEl.innerHTML = '';
+                const activeProfileId = localStorage.getItem('activeProfileId');
+
+                profiles.forEach(profile => {
+                    const isActive = profile.id === activeProfileId;
+                    const profileEl = document.createElement('div');
+                    profileEl.className = `p-4 border rounded-lg flex items-center justify-between ${isActive ? 'bg-indigo-50 border-indigo-300' : 'bg-slate-50'}`;
+                    profileEl.innerHTML = `
+                        <div>
+                            <p class="font-bold">${profile.name}</p>
+                            <p class="text-xs text-slate-500">${profile.type === 'shared' ? 'Compartido' : 'Personal'}</p>
+                        </div>
+                        <div class="flex gap-2">
+                            ${!isActive ? `<button data-id="${profile.id}" class="select-btn text-sm bg-green-500 text-white px-3 py-1 rounded-md hover:bg-green-600">Activar</button>` : '<span class="text-sm font-bold text-indigo-700">Activo</span>'}
+                            <button data-id="${profile.id}" class="export-btn text-sm bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600">Exportar</button>
+                            <button data-id="${profile.id}" class="delete-btn text-sm bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600">Eliminar</button>
+                        </div>
+                    `;
+                    profilesListEl.appendChild(profileEl);
+                });
+            };
+
+            addProfileBtn.addEventListener('click', () => {
+                const name = prompt('Ingresa el nombre del nuevo perfil (ej: Familia Pérez):');
+                if (name) {
+                    const type = confirm('¿Es un perfil compartido?') ? 'shared' : 'personal';
+                    profiles.push({ id: `profile_${Date.now()}`, name, type });
+                    saveProfiles();
+                    renderProfiles();
+                }
+            });
+
+            profilesListEl.addEventListener('click', (e) => {
+                const target = e.target;
+                const profileId = target.dataset.id;
+
+                if (target.classList.contains('select-btn')) {
+                    localStorage.setItem('activeProfileId', profileId);
+                    renderProfiles(); // Re-render to show the active state change
+                }
+
+                if (target.classList.contains('delete-btn')) {
+                    if (confirm('¿Estás seguro? Se borrarán todos los datos de este perfil.')) {
+                        profiles = profiles.filter(p => p.id !== profileId);
+                        // Clean up all data associated with this profile
+                        Object.keys(localStorage).forEach(key => {
+                            if (key.startsWith(profileId)) {
+                                localStorage.removeItem(key);
+                            }
+                        });
+                        saveProfiles();
+                        loadProfiles(); // Reload to handle active profile change if needed
+                    }
+                }
+
+                if (target.classList.contains('export-btn')) {
+                    const dataToExport = {};
+                    Object.keys(localStorage).forEach(key => {
+                        if (key.startsWith(profileId)) {
+                            dataToExport[key] = localStorage.getItem(key);
+                        }
+                    });
+                    const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${profileId}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                }
+            });
+
+            importInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        try {
+                            const importedData = JSON.parse(event.target.result);
+                            Object.keys(importedData).forEach(key => {
+                                localStorage.setItem(key, importedData[key]);
+                            });
+                            // We need to add the profile metadata to our profiles list
+                            const profileId = Object.keys(importedData)[0].split('_')[1];
+                            const profileName = prompt('Dale un nombre a este perfil importado:');
+                            if (profileName && !profiles.some(p => p.id === `profile_${profileId}`)) {
+                                profiles.push({ id: `profile_${profileId}`, name: profileName, type: 'shared' });
+                                saveProfiles();
+                                renderProfiles();
+                            }
+                            alert('Perfil importado con éxito.');
+                        } catch (err) {
+                            alert('Error al importar el archivo. Asegúrate de que sea un archivo de perfil válido.');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            });
+
+            loadProfiles();
+        });
+    </script>
+</body>
+</html>
