@@ -5,20 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Diagnóstico de Finanzas Personales</title>
     
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- Chart.js Datalabels Plugin for percentages -->
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 
-    <!-- jsPDF and html2canvas for PDF Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-    <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://css.gg/css?=|trash|reload" rel="stylesheet">
@@ -45,17 +40,6 @@
 </head>
 <body class="bg-slate-50 text-slate-800">
 
-    <!-- Profile Selector Modal -->
-    <div id="profile-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md text-center">
-            <h2 class="text-2xl font-bold text-slate-900">¿Quién eres?</h2>
-            <p class="text-slate-600 mt-2 mb-4">Selecciona un perfil para continuar.</p>
-            <div id="profile-selection-list" class="space-y-2"></div>
-            <a href="perfiles.html" class="text-indigo-600 text-sm font-semibold mt-4 inline-block hover:underline">Gestionar Perfiles</a>
-        </div>
-    </div>
-
-    <!-- Welcome Modal -->
     <div id="welcome-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 hidden">
         <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md text-center">
             <h2 class="text-2xl font-bold text-slate-900">¡Bienvenid@!</h2>
@@ -67,7 +51,6 @@
         </div>
     </div>
 
-    <!-- Categories Modal -->
     <div id="categories-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-40 hidden">
         <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
             <div class="flex justify-between items-center mb-4">
@@ -88,7 +71,6 @@
         </div>
     </div>
 
-    <!-- Achievement Toast -->
     <div id="achievement-toast" class="fixed bottom-5 right-5 bg-gray-900 text-white p-4 rounded-lg shadow-lg max-w-sm z-50">
         <p class="font-bold text-yellow-400">🏆 ¡Logro Desbloqueado!</p>
         <p id="achievement-title" class="font-semibold mt-1"></p>
@@ -97,7 +79,6 @@
 
     <div class="container mx-auto p-4 md:p-8 max-w-7xl">
         
-        <!-- Encabezado -->
         <header class="text-center mb-8">
             <h1 class="text-3xl md:text-4xl font-bold text-slate-900">Panel de <span id="user-name-header">Salud Financiera</span></h1>
             <div class="flex justify-center items-center gap-2 mt-2">
@@ -108,7 +89,6 @@
             </div>
         </header>
 
-        <!-- Selector de Moneda -->
         <div class="max-w-md mx-auto mb-8 bg-white p-4 rounded-lg shadow-md">
             <label for="currency" class="block text-sm font-medium text-slate-700 text-center">Selecciona tu moneda principal</label>
             <select id="currency" class="mt-2 block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
@@ -119,10 +99,8 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             
-            <!-- Columna de Entrada de Datos -->
             <div class="space-y-8">
                 
-                <!-- Card de Ingresos -->
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <h2 class="text-xl font-semibold mb-4 border-b pb-2">1. Ingresos Mensuales</h2>
                     <div id="incomes-container" class="space-y-4">
@@ -134,7 +112,6 @@
                     <button id="add-income" class="mt-4 text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition-colors">+ Añadir otro ingreso</button>
                 </div>
 
-                <!-- Card de Gastos Fijos -->
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <h2 class="text-xl font-semibold mb-4 border-b pb-2">2. Gastos Fijos Mensuales</h2>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -157,7 +134,6 @@
                     </div>
                 </div>
 
-                <!-- Card de Gastos Variables -->
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <div class="flex justify-between items-center mb-4 border-b pb-2">
                         <h2 class="text-xl font-semibold">3. Gastos Variables Mensuales</h2>
@@ -175,23 +151,18 @@
                         <div class="md:col-span-2">
                             <label for="expense-category" class="text-sm font-medium text-slate-700">Categoría</label>
                             <select id="expense-category" class="mt-1 block w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                                <!-- Categorías se cargarán aquí -->
-                            </select>
+                                </select>
                         </div>
                         <button type="submit" class="md:col-span-2 w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">Añadir Gasto</button>
                     </form>
                     <div id="variable-expenses-container" class="mt-6 space-y-4">
-                        <!-- El seguimiento del presupuesto se renderizará aquí -->
-                    </div>
+                        </div>
                 </div>
             </div>
 
-            <!-- Columna del Dashboard de Análisis -->
             <div class="space-y-8">
                 
-                <div id="report-content"> <!-- Contenedor para el contenido del PDF -->
-                    <!-- Resumen General -->
-                    <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                <div id="report-content"> <div class="bg-white p-6 rounded-lg shadow-md mb-8">
                         <h2 class="text-xl font-semibold mb-4">Análisis Financiero</h2>
                         <div class="space-y-4">
                             <div class="flex justify-between items-center p-3 bg-slate-100 rounded-md">
@@ -213,7 +184,6 @@
                         </div>
                     </div>
 
-                    <!-- Gráfico de Gastos -->
                     <div class="bg-white p-6 rounded-lg shadow-md mb-8">
                         <h2 class="text-xl font-semibold mb-4">Distribución de Gastos</h2>
                         <div class="w-full max-w-md mx-auto">
@@ -221,7 +191,6 @@
                         </div>
                     </div>
 
-                    <!-- Diagnóstico y Recomendaciones -->
                     <div class="bg-white p-6 rounded-lg shadow-md">
                         <div class="flex justify-between items-start mb-4">
                             <h2 class="text-xl font-semibold">Tu Asesor Financiero Personal</h2>
@@ -241,16 +210,13 @@
                             </div>
                             
                             <div id="detailed-analysis" class="p-3 bg-slate-50 rounded-md border-l-4 border-blue-500 hidden">
-                                <!-- Análisis detallado se insertará aquí -->
-                            </div>
+                                </div>
                             
                             <div id="recommendations" class="mt-4 space-y-4 text-sm text-slate-700 hidden">
-                                <!-- Las recomendaciones se generarán aquí -->
-                            </div>
+                                </div>
 
                             <div id="action-path-container" class="space-y-4">
-                                <!-- Los CTAs se insertarán aquí en el orden correcto -->
-                            </div>
+                                </div>
                         </div>
                     </div>
                 </div>
@@ -263,16 +229,6 @@
         </div>
     </div>
     
-    <!-- Plantillas de los CTAs (ocultas) -->
-    <template id="profiles-cta-template">
-        <div class="p-4 bg-teal-100 text-center rounded-lg">
-            <h4 class="font-semibold text-teal-800">¿Gestionas tus finanzas en equipo?</h4>
-            <p class="text-sm text-teal-700 mt-1">Crea un perfil compartido para gestionar las finanzas de tu familia o pareja.</p>
-            <a href="perfiles.html" class="mt-4 inline-block bg-teal-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-teal-700 transition-colors">
-                Gestionar Perfiles →
-            </a>
-        </div>
-    </template>
     <template id="networth-cta-template">
         <div id="networth-cta-container" class="p-4 bg-purple-100 text-center rounded-lg">
             <h4 class="font-semibold text-purple-800">Mide lo que Realmente Importa</h4>
@@ -338,42 +294,18 @@
     </template>
 
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        
-        // This function will be called once the DOM is loaded.
-        function main() {
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            const firebaseConfigString = typeof __firebase_config !== 'undefined' ? __firebase_config : '{}';
-            
-            let app, db, auth;
-            try {
-                const firebaseConfig = JSON.parse(firebaseConfigString);
-                if (!firebaseConfig.projectId) throw new Error("Missing projectId");
-                app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-            } catch(e) {
-                console.error("Firebase initialization error:", e);
-                document.body.innerHTML = `<div class="text-center p-8 text-red-600"><strong>Error de Configuración de Firebase.</strong><p>Por favor, verifica que la configuración sea correcta.</p></div>`;
-                return;
-            }
-
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
             // --- STATE MANAGEMENT ---
             let state = {
                 currency: 'COP',
                 variableExpenses: [],
                 currentDiagnosis: null,
                 investorProfile: null,
-                activeProfileId: null,
             };
             let expenseChart = null;
 
             // --- DOM ELEMENTS ---
-            const profileModal = document.getElementById('profile-modal');
-            const profileSelectionList = document.getElementById('profile-selection-list');
             const welcomeModal = document.getElementById('welcome-modal');
             const welcomeForm = document.getElementById('welcome-form');
             const userNameInput = document.getElementById('user-name-input');
@@ -435,12 +367,12 @@
 
             function getProgress() {
                 try {
-                    const progressData = localStorage.getItem(`${state.activeProfileId}_userProgress`);
+                    const progressData = localStorage.getItem('userProgress');
                     if (!progressData) return { achievements: [], streak: 0, lastEntry: null };
                     
                     const progress = JSON.parse(progressData);
                     if (progress && typeof progress === 'object') {
-                         return {
+                          return {
                             achievements: progress.achievements || [],
                             streak: progress.streak || 0,
                             lastEntry: progress.lastEntry || null
@@ -453,7 +385,7 @@
             }
 
             function saveProgress(progress) {
-                localStorage.setItem(`${state.activeProfileId}_userProgress`, JSON.stringify(progress));
+                localStorage.setItem('userProgress', JSON.stringify(progress));
             }
 
             function unlockAchievement(id) {
@@ -490,31 +422,12 @@
             }
 
             function checkContextualAchievements() {
-                if (localStorage.getItem(`${state.activeProfileId}_financialGoals`)) unlockAchievement('firstGoal');
-                if (localStorage.getItem(`${state.activeProfileId}_financialDebts`)) unlockAchievement('firstDebtPlan');
+                if (localStorage.getItem('financialGoals')) unlockAchievement('firstGoal');
+                if (localStorage.getItem('financialDebts')) unlockAchievement('firstDebtPlan');
             }
 
             // --- USER PERSONALIZATION & PROFILES ---
-            async function initializeApp() {
-                await initAuth();
-                let profiles = JSON.parse(localStorage.getItem('financialProfiles')) || [];
-                let activeProfileId = localStorage.getItem('activeProfileId');
-
-                if (profiles.length === 0) {
-                    const defaultProfileId = `profile_${Date.now()}`;
-                    profiles.push({ id: defaultProfileId, name: 'Personal', type: 'personal' });
-                    localStorage.setItem('financialProfiles', JSON.stringify(profiles));
-                    localStorage.setItem('activeProfileId', defaultProfileId);
-                    activeProfileId = defaultProfileId;
-                }
-                
-                if (!activeProfileId || !profiles.find(p => p.id === activeProfileId)) {
-                    activeProfileId = profiles[0].id;
-                    localStorage.setItem('activeProfileId', activeProfileId);
-                }
-
-                state.activeProfileId = activeProfileId;
-                
+            function initializeApp() {
                 loadUser();
                 loadCategories();
                 loadData();
@@ -524,7 +437,7 @@
             }
 
             function loadUser() {
-                const userName = localStorage.getItem(`${state.activeProfileId}_userName`);
+                const userName = localStorage.getItem('userName');
                 if (!userName) {
                     welcomeModal.classList.remove('hidden');
                 } else {
@@ -536,7 +449,7 @@
                 e.preventDefault();
                 const userName = userNameInput.value.trim();
                 if (userName) {
-                    localStorage.setItem(`${state.activeProfileId}_userName`, userName);
+                    localStorage.setItem('userName', userName);
                     userNameHeader.textContent = userName;
                     welcomeModal.classList.add('hidden');
                 }
@@ -545,7 +458,7 @@
             // --- CATEGORIES ---
             function getCategories() {
                 const defaultCategories = ['Alimentación', 'Transporte', 'Ocio y Entretenimiento', 'Educación', 'Salud', 'Ropa', 'Otros'];
-                const customCategories = JSON.parse(localStorage.getItem(`${state.activeProfileId}_customCategories`)) || [];
+                const customCategories = JSON.parse(localStorage.getItem('customCategories')) || [];
                 return [...defaultCategories, ...customCategories];
             }
 
@@ -586,9 +499,9 @@
                 const newCategory = newCategoryNameInput.value.trim();
                 const allCategories = getCategories();
                 if (newCategory && !allCategories.includes(newCategory)) {
-                    const customCategories = JSON.parse(localStorage.getItem(`${state.activeProfileId}_customCategories`)) || [];
+                    const customCategories = JSON.parse(localStorage.getItem('customCategories')) || [];
                     customCategories.push(newCategory);
-                    localStorage.setItem(`${state.activeProfileId}_customCategories`, JSON.stringify(customCategories));
+                    localStorage.setItem('customCategories', JSON.stringify(customCategories));
                     loadCategories();
                     renderCategoriesInModal();
                     newCategoryNameInput.value = '';
@@ -601,9 +514,9 @@
                 const deleteBtn = e.target.closest('.delete-category-btn');
                 if (deleteBtn) {
                     const categoryName = deleteBtn.dataset.name;
-                    let customCategories = JSON.parse(localStorage.getItem(`${state.activeProfileId}_customCategories`)) || [];
+                    let customCategories = JSON.parse(localStorage.getItem('customCategories')) || [];
                     customCategories = customCategories.filter(cat => cat !== categoryName);
-                    localStorage.setItem(`${state.activeProfileId}_customCategories`, JSON.stringify(customCategories));
+                    localStorage.setItem('customCategories', JSON.stringify(customCategories));
                     
                     state.variableExpenses = state.variableExpenses.filter(exp => exp.category !== categoryName);
                     
@@ -651,13 +564,13 @@
                     dataToSave.fixedExpenses.push(input.value);
                 });
 
-                const allData = JSON.parse(localStorage.getItem(`${state.activeProfileId}_financieroDataHistory`)) || {};
+                const allData = JSON.parse(localStorage.getItem('financieroDataHistory')) || {};
                 allData[currentMonthKey] = dataToSave;
-                localStorage.setItem(`${state.activeProfileId}_financieroDataHistory`, JSON.stringify(allData));
+                localStorage.setItem('financieroDataHistory', JSON.stringify(allData));
             }
 
             function loadData() {
-                const allData = JSON.parse(localStorage.getItem(`${state.activeProfileId}_financieroDataHistory`)) || {};
+                const allData = JSON.parse(localStorage.getItem('financieroDataHistory')) || {};
                 const now = new Date();
                 const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
                 const data = allData[currentMonthKey];
@@ -741,7 +654,7 @@
             // --- RENDER FUNCTIONS ---
             const renderBudgetTracker = () => {
                 variableExpensesContainer.innerHTML = '';
-                const budget = JSON.parse(localStorage.getItem(`${state.activeProfileId}_financialBudget`)) || {};
+                const budget = JSON.parse(localStorage.getItem('financialBudget')) || {};
                 const expensesByCategory = {};
 
                 state.variableExpenses.forEach(expense => {
@@ -864,7 +777,7 @@
                 const totalVariableExpenses = state.variableExpenses.reduce((sum, exp) => sum + exp.amount, 0);
                 const totalExpenses = totalFixedExpenses + totalVariableExpenses;
                 
-                const allocatedSavings = parseFloat(localStorage.getItem(`${state.activeProfileId}_totalAllocatedSavings`)) || 0;
+                const allocatedSavings = parseFloat(localStorage.getItem('totalAllocatedSavings')) || 0;
                 allocatedSavingsEl.textContent = formatCurrency(allocatedSavings);
 
                 const cashFlow = totalIncome - totalExpenses - allocatedSavings;
@@ -889,8 +802,8 @@
             
             function resetAllData() {
                 // Clear data for the active profile only
-                const keysToRemove = ['_financieroDataHistory', '_financialBudget', '_financialGoals', '_totalAllocatedSavings', '_userName', '_userProgress', '_customCategories'];
-                keysToRemove.forEach(key => localStorage.removeItem(state.activeProfileId + key));
+                const keysToRemove = ['financieroDataHistory', 'financialBudget', 'financialGoals', 'totalAllocatedSavings', 'userName', 'userProgress', 'customCategories'];
+                keysToRemove.forEach(key => localStorage.removeItem(key));
                 
                 document.querySelectorAll('.data-input').forEach(input => input.value = '');
                 const dynamicIncomes = incomesContainer.querySelectorAll('div:not(:first-child)');
@@ -929,7 +842,7 @@
                 document.querySelectorAll('.fixed-expense').forEach(input => totalFixedExpenses += parseFormattedNumber(input.value));
                 const totalVariableExpenses = state.variableExpenses.reduce((sum, exp) => sum + exp.amount, 0);
                 const totalExpenses = totalFixedExpenses + totalVariableExpenses;
-                const allocatedSavings = parseFloat(localStorage.getItem(`${state.activeProfileId}_totalAllocatedSavings`)) || 0;
+                const allocatedSavings = parseFloat(localStorage.getItem('totalAllocatedSavings')) || 0;
                 const cashFlow = totalIncome - totalExpenses - allocatedSavings;
 
                 if (cashFlow > 0) unlockAchievement('positiveCashflow');
@@ -998,7 +911,7 @@
                     }
                 };
 
-                const historyLength = Object.keys(JSON.parse(localStorage.getItem(`${state.activeProfileId}_financieroDataHistory`)) || {}).length;
+                const historyLength = Object.keys(JSON.parse(localStorage.getItem('financieroDataHistory')) || {}).length;
                 if (historyLength > 1) {
                     appendCta(ctaTemplates.progress);
                 } else {
@@ -1032,7 +945,6 @@
                 });
                 
                 appendCta(ctaTemplates.networth);
-                appendCta(ctaTemplates.profiles);
                 
                 const profileFromQuiz = localStorage.getItem('investorProfileFromQuiz');
                 if (profileFromQuiz) {
@@ -1080,9 +992,9 @@
                 
                 goalsBtn.addEventListener('click', () => {
                     if (cashFlow > 0) {
-                        localStorage.setItem(`${state.activeProfileId}_availableCashFlow`, cashFlow);
+                        localStorage.setItem('availableCashFlow', cashFlow);
                     } else {
-                        localStorage.removeItem(`${state.activeProfileId}_availableCashFlow`);
+                        localStorage.removeItem('availableCashFlow');
                     }
                 });
             }
@@ -1268,8 +1180,7 @@
                 pdf.save('Mi-Primer-Plan-Financiero.pdf');
                 exportButton.textContent = 'Mi Primer Plan Financiero (PDF)';
             }
-
-            // --- INITIALIZATION ---
+            
             async function initAuth() {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
@@ -1277,7 +1188,8 @@
                     await signInAnonymously(auth);
                 }
             }
-            
+
+            // --- INITIALIZATION ---
             initializeApp();
         });
     </script>
