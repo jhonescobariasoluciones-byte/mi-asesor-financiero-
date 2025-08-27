@@ -1,12 +1,40 @@
+# .github/workflows/quality-check.yml
+
+# Nombre del flujo de trabajo que aparecerá en la pestaña "Actions" de GitHub
 name: Code Quality Check
-on: [push, pull_request]
+
+# Define cuándo se debe ejecutar este flujo de trabajo
+on:
+  push:
+  pull_request:
+
+# Define los trabajos (jobs) que se ejecutarán
 jobs:
-  lint-check:
+  # Nombramos el job de forma más descriptiva
+  test-and-lint:
+    # Le decimos a GitHub que use una máquina virtual con la última versión de Ubuntu
     runs-on: ubuntu-latest
+
+    # 'steps' son las acciones que ejecutará la máquina virtual, en orden
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      # 1. Clona tu repositorio en la máquina virtual
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2. Instala Node.js en la máquina
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
         with:
           node-version: '18'
-      - run: npm install
-      - run: npm run lint
+
+      # 3. Instala todas las dependencias (ESLint, Jest, Babel, etc.)
+      - name: Install dependencies
+        run: npm install
+
+      # 4. Ejecuta nuestras pruebas unitarias. Si esto falla, el workflow se detiene.
+      - name: Run tests
+        run: npm test
+
+      # 5. Ejecuta el linter. Si las pruebas pasaron, también revisa el estilo.
+      - name: Run ESLint
+        run: npm run lint
