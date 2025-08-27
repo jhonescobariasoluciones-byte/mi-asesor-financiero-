@@ -6,7 +6,8 @@ export const state = {
   porcentajeEgresos: -1,
 };
 
-const calcularTotal = (lista) => lista.reduce((total, item) => total + item.valor, 0);
+const calcularTotal = (lista) =>
+  lista.reduce((total, item) => total + item.valor, 0);
 
 export const agregarItem = (tipo, descripcion, valor) => {
   const nuevoItem = {

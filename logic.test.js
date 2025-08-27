@@ -1,9 +1,8 @@
 // logic.test.js
-import { state, agregarItem, actualizarBalance } from './logic.js';
+import { state, agregarItem, actualizarBalance } from './logic'; // Sin .js
 
 // 'describe' agrupa un conjunto de pruebas relacionadas.
 describe('Pruebas para la Lógica Financiera', () => {
-
   // 'beforeEach' se ejecuta ANTES de cada prueba ('it').
   // Lo usamos para resetear los datos y asegurar que cada prueba sea independiente.
   beforeEach(() => {
